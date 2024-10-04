@@ -46,8 +46,9 @@ The command will excute the tool with inputs specified in the `inputs` folder. T
 │   ├── tools               # Contains the individual analysis tools
 │   ├── utils               # General utilities used by the tools
 │   ├── tests               # Unit tests for the individual tools
-│── Makefile                # To automated and standardize toolbox usage
-│── Dockerfile              # Commands to assemble the Docker imageons
-|── user_deps.txt        # Python dependencies for the toolbox
+│── Makefile                 # To automated and standardize toolbox usage
+│── Dockerfile               # Commands to assemble the Docker imageons
+|── LICENSE                 # License file
+|── user_deps.txt           # Python dependencies for the toolbox
 └── .gitignore              # Tells Git which files & folders to ignore
 ```
