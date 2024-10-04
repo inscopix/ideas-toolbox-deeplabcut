@@ -29,9 +29,9 @@ To run the toolbox, you can use the following command:
 
 Available tools are:
 
-- inscopix_bottomw_up_model__run
-- training__train_model
-- workflow__run_workflow
+- `inscopix_bottom_up_model__run`
+- `training__train_model`
+- `workflow__run_workflow`
 
 The command will excute the tool with inputs specified in the `inputs` folder. The output will be saved in the `outputs` folder.
 
