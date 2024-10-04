@@ -8,17 +8,17 @@
 
 
 ## Toolbox Description
-A toolbox for running DeepLabCut-based tools on the IDEAS platform.
+A toolbox for running [DeepLabCut-based](https://github.com/DeepLabCut/DeepLabCut) tools on the IDEAS platform.
 
 This toolbox is designed to run as a Docker image, which can be run on the IDEAS platform. This toolbox consists of the following tools:
 
-- `DeepLabCut Pose Estimation`: Analyze input behavioral videos using an input pre-trained DeepLabCut model
+- `Train and Evaluate DeepLabCut Model`: Train and evaluate a new DeepLabCut model using a set of labeled images and videos.
+- `DeepLabCut Pose Estimation`: Analyze behavioral videos using any pre-trained DeepLabCut model
 - `Inscopix Bottom View Mouse Pose Estimation`: Analyze Inscopix bottom-view mouse videos using a pre-trained DeepLabCut model, trained internally at Inscopix.
-- `Train DeepLabCut Model`: Train a new DeepLabCut model using a set of labeled images and videos.
 
 ## How to Get Help
 - [IDEAS documentation](https://inscopix.github.io/ideas-docs/tools/dlc/workflow__run_workflow.html) contains detailed information on how to use the toolbox within the IDEAS platform, the parameters that can be used, and the expected output.
-- If you have found a bug, we reccomend searching the [issues page](https://github.com/inscopix/ideas-toolbox-dlc/issues) to see if it has already been reported. If not, please open a new issue.
+- If you have found a bug, we reccomend searching the [issues page](https://github.com/inscopix/ideas-toolbox-deeplabcut/issues) to see if it has already been reported. If not, please open a new issue.
 - If you have a feature request, please open a new issue with the label `enhancement`
 
 ## Executing the Toolbox
