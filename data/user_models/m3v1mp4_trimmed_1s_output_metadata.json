@@ -1,0 +1,51 @@
+{
+    "dlc_pose_estimates.0": {
+        "dlc": {
+            "task": "Project",
+            "scorer": "IDEAS",
+            "date": "Apr1",
+            "multi_animal_project": false,
+            "model_neural_net_type": "mobilenet_v2_1.0",
+            "body_parts": "Ear_left,Ear_right,Nose,Center,Lateral_left,Lateral_right,Tail_base,Tail_end",
+            "snapshot": 950000
+        }
+    },
+    "dlc_annotations": {
+        "dlc": {
+            "task": "Project",
+            "scorer": "IDEAS",
+            "date": "Apr1",
+            "multi_animal_project": false,
+            "model_neural_net_type": "mobilenet_v2_1.0",
+            "body_parts": "Ear_left,Ear_right,Nose,Center,Lateral_left,Lateral_right,Tail_base,Tail_end",
+            "snapshot": 950000
+        }
+    },
+    "dlc_labeled_movie.0": {
+        "spacingInfo": {
+            "numPixels": {
+                "x": 640,
+                "y": 480
+            }
+        },
+        "timingInfo": {
+            "cropped": [],
+            "dropped": [],
+            "numTimes": 33,
+            "period": {
+                "num": 33333,
+                "den": 1000000
+            },
+            "sampling_rate": 30.0
+        },
+        "dlc": {
+            "task": "Project",
+            "scorer": "IDEAS",
+            "date": "Apr1",
+            "multi_animal_project": false,
+            "model_neural_net_type": "mobilenet_v2_1.0",
+            "body_parts": "Ear_left,Ear_right,Nose,Center,Lateral_left,Lateral_right,Tail_base,Tail_end",
+            "snapshot": 950000
+        }
+    }
+}

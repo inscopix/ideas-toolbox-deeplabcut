@@ -1,0 +1,1 @@
+python3.10 /ideas/function_caller.py inscopix_bottom_up_model__run

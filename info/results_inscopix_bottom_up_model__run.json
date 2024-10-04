@@ -1,0 +1,134 @@
+[
+    {
+        "key": "dlc_annotations",
+        "analysis_table_result_column_name": "DeepLabCut Annotations",
+        "file_type": "experiment_annotations",
+        "file_format": [
+            "csv",
+            "parquet"
+        ],
+        "file_structure": "table",
+        "file_category": "result",
+        "help": "DeepLabCut pose estimates in IDEAS experiment annotations format",
+        "required": true,
+        "multiple": false,
+        "is_preview": false,
+        "is_output": true,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": []
+    },
+    {
+        "key": "dlc_labeled_movie",
+        "analysis_table_result_column_name": "DeepLabCut Labeled Movie",
+        "file_type": "movie",
+        "file_format": "mp4",
+        "file_structure": "movie",
+        "file_category": "result",
+        "help": "DeepLabCut pose estimates annotated on the input movie",
+        "required": true,
+        "multiple": true,
+        "is_preview": true,
+        "is_output": true,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": [
+            "dlc_labeled_movie"
+        ]
+    },
+    {
+        "key": "dlc_pose_estimates",
+        "analysis_table_result_column_name": "DeepLabCut Pose Estimates",
+        "file_type": "dlc_model_predictions_data",
+        "file_format": "h5",
+        "file_structure": "table",
+        "file_category": "result",
+        "help": "DeepLabCut pose estimates in an H5 file",
+        "required": true,
+        "multiple": true,
+        "is_preview": false,
+        "is_output": true,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": []
+    },
+    {
+        "key": "hist",
+        "analysis_table_result_column_name": "DeepLabCut Pose Estimates Histogram Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "A preview plot of the DeepLabCut pose estimates showing the distribution of consecutive, x & y, coordinate differences",
+        "required": true,
+        "multiple": true,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": [
+            "dlc_pose_estimates", "dlc_annotations"
+        ]
+    },
+    {
+        "key": "plot-likelihood",
+        "analysis_table_result_column_name": "DeepLabCut Pose Estimates Likelihood Plot Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "A preview plot of the DeepLabCut pose estimates showing the likelihood of each body part over time.",
+        "required": true,
+        "multiple": true,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": [
+            "dlc_pose_estimates", "dlc_annotations"
+        ]
+    },
+    {
+        "key": "plot",
+        "analysis_table_result_column_name": "DeepLabCut Pose Estimates Plot Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "A preview plot of the DeepLabCut pose estimates showing the x & y coordinates of each body part over time.",
+        "required": true,
+        "multiple": true,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": [
+            "dlc_pose_estimates", "dlc_annotations"
+        ]
+    },
+    {
+        "key": "trajectory",
+        "analysis_table_result_column_name": "DeepLabCut Pose Estimates Trajectory Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "A preview plot of the DeepLabCut pose estimates showing the x & y coordinates of each body part plotted in space.",
+        "required": true,
+        "multiple": true,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [
+            "movie_files"
+        ],
+        "preview_of": [
+            "dlc_pose_estimates", "dlc_annotations"
+        ]
+    }
+]

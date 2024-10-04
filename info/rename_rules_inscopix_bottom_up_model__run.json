@@ -1,0 +1,32 @@
+{
+    "inscopix_bottom_up_model__run": {
+        "dlc_annotations": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "dlc_annotations"
+        },
+        "dlc_labeled_movie": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "dlc_labeled_movie"
+        },
+        "dlc_pose_estimates": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "dlc_pose_estimates"
+        },
+        "hist": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "hist"
+        },
+        "plot-likelihood": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "plot-likelihood"
+        },
+        "plot": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "plot"
+        },
+        "trajectory": {
+            "pattern": ["movie_files", "custom_string"],
+            "custom_string": "trajectory"
+        }
+    }
+}

@@ -1,0 +1,92 @@
+# Project definitions (do not edit)
+Task: bottom-view-mouse-fullres
+scorer: IDEAS
+date: Aug9
+multianimalproject: false
+identity:
+
+
+# Project path (change when moving around)
+project_path: /Users/nadil/Desktop/bottom-view-mouse-fullres-IDEAS-2024-08-09
+
+
+# Default DeepLabCut engine to use for shuffle creation (either pytorch or tensorflow)
+engine: pytorch
+
+
+# Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/sun02_2023-09-18-11-59-49_video-camera-1.mp4:
+    crop: 0, 1920, 0, 1080
+  /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/e3v828b-20221002T152306-153708_cropped_and_masked.avi:
+    crop: 0, 1100, 0, 1100
+  ? /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/2023-02-09-11-40-07_video_e3v8251-20230209T114012-115014.avi
+  : crop: 0, 1600, 0, 1200
+  /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/sun03_2023-09-18-10-28-31_video-camera-1.mp4:
+    crop: 0, 1920, 0, 1080
+  ? /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/WhiteMatter4_e3v828b-20220118T100255-101315_2022-01-18-10-02-47_video.avi
+  : crop: 0, 1600, 0, 1200
+  ? /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/2023-02-09-12-32-01_video_e3v8251-20230209T123206-124215.avi
+  : crop: 0, 1600, 0, 1200
+  /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/PCP01_e3v8251-20221207T092408-094430.avi:
+    crop: 0, 1600, 0, 1200
+  /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/sun01_2023-09-18-10-28-29_video-camera-1.mp4:
+    crop: 0, 1920, 0, 1080
+  /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/2_3_0_alpha4_2024-01-25-09-01-28-track2.mp4:
+    crop: 0, 1920, 0, 1080
+  ? /Users/nadil/Documents/Inscopix_Projects/data/behavior/bottom-up/2023-02-09-11-52-52_video_e3v8251-20230209T115257-121306.avi
+  : crop: 0, 1600, 0, 1200
+bodyparts:
+- nose
+- center
+- tail
+
+
+# Fraction of video to start/stop when extracting frames for labeling/refinement
+start: 0
+stop: 1
+numframes2pick: 20
+
+
+# Plotting configuration
+skeleton:
+- - nose
+  - center
+- - center
+  - tail
+skeleton_color: black
+pcutoff: 0.6
+dotsize: 12
+alphavalue: 0.7
+colormap: rainbow
+
+
+# Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.95
+iteration: 0
+default_net_type: resnet_50
+default_augmenter: default
+snapshotindex: -1
+detector_snapshotindex: -1
+batch_size: 8
+
+
+# Cropping Parameters (for analysis and outlier frame detection)
+cropping: false
+#if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 640
+y1: 277
+y2: 624
+
+
+# Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true
+
+
+# Conversion tables to fine-tune SuperAnimal weights
+SuperAnimalConversionTables:

@@ -1,0 +1,1444 @@
+{
+    "contributor": {
+        "tenant": "inscopix",
+        "user": "support.inscopix@bruker.com"
+    },
+    "details": {},
+    "exit_status": {
+        "codes": [
+            {
+                "code": "DEFAULT_TOOLBOX_ERROR_0001",
+                "description": "Placeholder error description",
+                "type": "ERROR"
+            }
+        ],
+        "file_location": "exit_status.txt"
+    },
+    "help": "Set of tools based on DeepLabCut",
+    "key": "dlc",
+    "name": "DLC",
+    "schema_version": "2.1.0",
+    "tools": [
+        {
+            "name": "Inscopix Bottom View Mouse Pose Estimation",
+            "key": "dlc_workflow",
+            "help": "Track 8 body parts of a single mouse with a deeplabcut model",
+            "version": "2.1.2",
+            "maturity": "production",
+            "visibility": "public",
+            "toolkit": "Behavior Processing",
+            "command": "inscopix_bottom_up_model__run.sh",
+            "resources": {
+                "cpu": 3,
+                "gpu": 1,
+                "memory": 7600,
+                "storage": 27000,
+                "max_file_size": 4000
+            },
+            "params": [
+                {
+                    "key": "movie_files",
+                    "name": "Behavior Movie",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Behavioural movies to analyze. Must be one of the following formats: .isxb, .mp4, and .avi.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Inputs",
+                            "group_order": 0
+                        },
+                        "is_dir": false,
+                        "multiple": true,
+                        "file_formats": [
+                            "isxb",
+                            "mp4",
+                            "avi"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "nvision_movie",
+                                "file_structure": "movie",
+                                "file_format": "isxb"
+                            },
+                            {
+                                "file_type": "movie",
+                                "file_structure": "movie",
+                                "file_format": "mp4"
+                            },
+                            {
+                                "file_type": "movie",
+                                "file_structure": "movie",
+                                "file_format": "avi"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "experiment_annotations_format",
+                    "name": "Experiment Annotations Format",
+                    "required": true,
+                    "hidden": false,
+                    "help": "The file format of the output experiment annotations file. Can be either .parquet or .csv",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "choices": [
+                            "parquet",
+                            "csv"
+                        ],
+                        "display_options": [
+                            "parquet",
+                            "csv"
+                        ],
+                        "display": {
+                            "group": "Predict",
+                            "group_order": 0
+                        }
+                    },
+                    "default": "parquet"
+                },
+                {
+                    "key": "crop_rect",
+                    "name": "Crop Rectangle",
+                    "required": false,
+                    "hidden": false,
+                    "help": "Draw a cropping rectangle on the input movie which will be used by DeepLabCut to crop movie frames before running the model.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolRoiFrameParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Predict",
+                            "group_order": 1
+                        },
+                        "source_file": {
+                            "key": "movie_files",
+                            "data": {
+                                "type": "preview",
+                                "file_format": "mp4",
+                                "key": "no_tracking"
+                            }
+                        },
+                        "roi_settings": {
+                            "bounding_box": {
+                                "key": "crop_rect",
+                                "name": "Crop Rectangle"
+                            }
+                        }
+                    }
+                },
+                {
+                    "key": "window_length",
+                    "name": "Window Length",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Length of the median filter applied on the predictions. Must be an odd number. If zero, then no filtering is applied.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Filter",
+                            "group_order": 0
+                        },
+                        "min": 0,
+                        "max": 100
+                    },
+                    "default": 5
+                },
+                {
+                    "key": "displayed_body_parts",
+                    "name": "Displayed Body Parts",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Selects the body parts that are plotted in the video. If \"all\", then all 8 body are plotted. Otherwise a comma-seperated list of strings selects a subset of body parts to plot. E.g., \"nose\",\"neck\". The body parts available for plotting are: tail_tip, tail_base, R_hind, L_hind, neck, R_fore, L_fore, nose.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 0
+                        }
+                    },
+                    "default": "all"
+                },
+                {
+                    "key": "p_cutoff",
+                    "name": "P Cutoff",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Cutoff threshold for predictions when labelling the input movie. If predictions are below the threshold, then they are not displayed.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolFloatRangeParam",
+                        "param_datatype": "float",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 1
+                        },
+                        "min": 0,
+                        "max": 1.0
+                    },
+                    "default": 0.6
+                },
+                {
+                    "key": "dot_size",
+                    "name": "Dot Size",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Size in pixels to draw a point labelling a body part.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 2
+                        },
+                        "min": 1,
+                        "max": 8
+                    },
+                    "default": 5
+                },
+                {
+                    "key": "color_map",
+                    "name": "Color Map",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Color map used to color body part labels. Any matplotlib colormap name is acceptable.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 3
+                        }
+                    },
+                    "default": "rainbow"
+                },
+                {
+                    "key": "keypoints_only",
+                    "name": "Keypoints Only",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Only display keypoints, not video frames.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 4
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "output_frame_rate",
+                    "name": "Output Frame Rate",
+                    "required": false,
+                    "hidden": false,
+                    "help": "Positive number, output frame rate for labeled video. If None, use the input movie frame rate.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 5
+                        },
+                        "min": 1,
+                        "max": 100
+                    }
+                },
+                {
+                    "key": "draw_skeleton",
+                    "name": "Draw Skeleton",
+                    "required": true,
+                    "hidden": false,
+                    "help": "If True adds a line connecting the body parts, making a skeleton on each frame. The body parts to be connected and the color of these connecting lines are specified by the Color Map.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 6
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "trail_points",
+                    "name": "Trail Points",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Number of previous frames whose body parts are plotted in a frame (for displaying history).",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 7
+                        },
+                        "min": 0,
+                        "max": 100
+                    },
+                    "default": 0
+                }
+            ],
+            "results": [
+                {
+                    "group_key": "inscopix_bottom_up_model__run",
+                    "group_name": "Inscopix Bottom Up Model  Run",
+                    "group_type": "tool_output",
+                    "required": true,
+                    "multiple": false,
+                    "files": [
+                        {
+                            "result_key": "dlc_annotations",
+                            "result_name": "DeepLabCut Annotations",
+                            "help": "DeepLabCut pose estimates in IDEAS experiment annotations format",
+                            "required": true,
+                            "multiple": false,
+                            "file_formats": [
+                                "csv",
+                                "parquet"
+                            ],
+                            "file_type": "experiment_annotations"
+                        },
+                        {
+                            "result_key": "dlc_labeled_movie",
+                            "result_name": "DeepLabCut Labeled Movie",
+                            "help": "DeepLabCut pose estimates annotated on the input movie",
+                            "required": true,
+                            "multiple": true,
+                            "file_formats": [
+                                "mp4"
+                            ],
+                            "file_type": "movie"
+                        },
+                        {
+                            "result_key": "dlc_pose_estimates",
+                            "result_name": "DeepLabCut Pose Estimates",
+                            "help": "DeepLabCut pose estimates in an H5 file",
+                            "required": true,
+                            "multiple": true,
+                            "file_formats": [
+                                "h5"
+                            ],
+                            "file_type": "dlc_model_predictions_data"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "DeepLabCut Pose Estimation",
+            "key": "workflow__run_workflow",
+            "help": "Track animal body parts with a user-uploaded, pre-trained model",
+            "version": "1.0.2",
+            "maturity": "production",
+            "visibility": "public",
+            "toolkit": "Behavior Processing",
+            "command": "workflow__run_workflow.sh",
+            "resources": {
+                "cpu": 3,
+                "gpu": 1,
+                "memory": 7600,
+                "storage": 27000,
+                "max_file_size": 4000
+            },
+            "params": [
+                {
+                    "key": "model_dir",
+                    "name": "Zipped Model Folder",
+                    "required": true,
+                    "hidden": false,
+                    "help": "DeepLabCut model folder compressed in a .ZIP file. The contents of this file will be extracted and used for execution with DeepLabCut",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Input Files",
+                            "group_order": 0
+                        },
+                        "is_dir": false,
+                        "multiple": false,
+                        "file_formats": [
+                            "zip"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "dlc_labeled_data",
+                                "file_structure": "archive",
+                                "file_format": "zip"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "movie_files",
+                    "name": "Behavior Movie",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Behavioural movies to analyze. Must be one of the following formats: .isxb, .mp4, and .avi.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Inputs",
+                            "group_order": 1
+                        },
+                        "is_dir": false,
+                        "multiple": true,
+                        "file_formats": [
+                            "isxb",
+                            "mp4",
+                            "avi"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "nvision_movie",
+                                "file_structure": "movie",
+                                "file_format": "isxb"
+                            },
+                            {
+                                "file_type": "movie",
+                                "file_structure": "movie",
+                                "file_format": "mp4"
+                            },
+                            {
+                                "file_type": "movie",
+                                "file_structure": "movie",
+                                "file_format": "avi"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "experiment_annotations_format",
+                    "name": "Experiment Annotations Format",
+                    "required": true,
+                    "hidden": false,
+                    "help": "The file format of the output experiment annotations file. Can be either .parquet or .csv",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "choices": [
+                            "parquet",
+                            "csv"
+                        ],
+                        "display_options": [
+                            "parquet",
+                            "csv"
+                        ],
+                        "display": {
+                            "group": "Predict",
+                            "group_order": 0
+                        }
+                    },
+                    "default": "parquet"
+                },
+                {
+                    "key": "crop_rect",
+                    "name": "Crop Rectangle",
+                    "required": false,
+                    "hidden": false,
+                    "help": "Draw a cropping rectangle on the input movie which will be used by DeepLabCut to crop movie frames before running the model.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolRoiFrameParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Predict",
+                            "group_order": 1
+                        },
+                        "source_file": {
+                            "key": "movie_files",
+                            "data": {
+                                "type": "preview",
+                                "file_format": "mp4",
+                                "key": "no_tracking"
+                            }
+                        },
+                        "roi_settings": {
+                            "bounding_box": {
+                                "key": "crop_rect",
+                                "name": "Crop Rectangle"
+                            }
+                        }
+                    }
+                },
+                {
+                    "key": "window_length",
+                    "name": "Window Length",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Length of the median filter applied on the predictions. Must be an odd number. If zero, then no filtering is applied.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Filter",
+                            "group_order": 0
+                        },
+                        "min": 0,
+                        "max": 100
+                    },
+                    "default": 5
+                },
+                {
+                    "key": "displayed_body_parts",
+                    "name": "Displayed Body Parts",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Selects the body parts that are plotted in the video. The body parts are specified in the config.yaml file of the zipped model folder.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 0
+                        }
+                    },
+                    "default": "all"
+                },
+                {
+                    "key": "p_cutoff",
+                    "name": "P Cutoff",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Cutoff threshold for predictions when labelling the input movie. If predictions are below the threshold, then they are not displayed.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolFloatRangeParam",
+                        "param_datatype": "float",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 1
+                        },
+                        "min": 0,
+                        "max": 1.0
+                    },
+                    "default": 0.6
+                },
+                {
+                    "key": "dot_size",
+                    "name": "Dot Size",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Size in pixels to draw a point labelling a body part.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 2
+                        },
+                        "min": 1,
+                        "max": 8
+                    },
+                    "default": 5
+                },
+                {
+                    "key": "color_map",
+                    "name": "Color Map",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Color map used to color body part labels. Any matplotlib colormap name is acceptable.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 3
+                        }
+                    },
+                    "default": "rainbow"
+                },
+                {
+                    "key": "keypoints_only",
+                    "name": "Keypoints Only",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Only display keypoints, not video frames.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 4
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "output_frame_rate",
+                    "name": "Output Frame Rate",
+                    "required": false,
+                    "hidden": false,
+                    "help": "Positive number, output frame rate for labeled video. If None, use the input movie frame rate.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 5
+                        },
+                        "min": 1,
+                        "max": 100
+                    }
+                },
+                {
+                    "key": "draw_skeleton",
+                    "name": "Draw Skeleton",
+                    "required": true,
+                    "hidden": false,
+                    "help": "If True adds a line connecting the body parts, making a skeleton on each frame. The body parts to be connected and the color of these connecting lines are specified by the Color Map.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 6
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "trail_points",
+                    "name": "Trail Points",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Number of previous frames whose body parts are plotted in a frame (for displaying history).",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Label",
+                            "group_order": 7
+                        },
+                        "min": 0,
+                        "max": 100
+                    },
+                    "default": 0
+                }
+            ],
+            "results": [
+                {
+                    "group_key": "workflow__run_workflow",
+                    "group_name": "Workflow  Run Workflow",
+                    "group_type": "tool_output",
+                    "required": true,
+                    "multiple": false,
+                    "files": [
+                        {
+                            "result_key": "dlc_annotations",
+                            "result_name": "DeepLabCut Annotations",
+                            "help": "DeepLabCut pose estimates in IDEAS experiment annotations format",
+                            "required": true,
+                            "multiple": false,
+                            "file_formats": [
+                                "csv",
+                                "parquet"
+                            ],
+                            "file_type": "experiment_annotations"
+                        },
+                        {
+                            "result_key": "dlc_labeled_movie",
+                            "result_name": "DeepLabCut Labeled Movie",
+                            "help": "DeepLabCut pose estimates annotated on the input movie",
+                            "required": true,
+                            "multiple": true,
+                            "file_formats": [
+                                "mp4"
+                            ],
+                            "file_type": "movie"
+                        },
+                        {
+                            "result_key": "dlc_pose_estimates",
+                            "result_name": "DeepLabCut Pose Estimates",
+                            "help": "DeepLabCut pose estimates in an H5 file",
+                            "required": true,
+                            "multiple": true,
+                            "file_formats": [
+                                "h5"
+                            ],
+                            "file_type": "dlc_model_predictions_data"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Train DeepLabCut Model",
+            "key": "training__train_model",
+            "help": "Train a deep learning model for pose estimation using DeepLabCut",
+            "version": "1.0.3",
+            "maturity": "production",
+            "visibility": "public",
+            "toolkit": "Behavior Processing",
+            "command": "training__train_model.sh",
+            "resources": {
+                "cpu": 3,
+                "gpu": 1,
+                "memory": 7600,
+                "storage": 27000,
+                "max_file_size": 4000
+            },
+            "params": [
+                {
+                    "key": "labeled_data_zip_file",
+                    "name": "Labeled Data Zip File",
+                    "required": true,
+                    "hidden": false,
+                    "help": "A zip file containing the labeled data to use for training.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Inputs",
+                            "group_order": 0
+                        },
+                        "is_dir": false,
+                        "multiple": false,
+                        "file_formats": [
+                            "zip",
+                            "tar.gz"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "dlc_labeled_data",
+                                "file_structure": "archive",
+                                "file_format": "zip"
+                            },
+                            {
+                                "file_type": "dlc_labeled_data",
+                                "file_structure": "archive",
+                                "file_format": "tar.gz"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "config_file",
+                    "name": "Config File",
+                    "required": true,
+                    "hidden": false,
+                    "help": "A config file describing the configuration of the DLC project. Includes the body parts and skeleton of the animal pose, training fraction, network and augmenter types, etc.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Inputs",
+                            "group_order": 1
+                        },
+                        "is_dir": false,
+                        "multiple": false,
+                        "file_formats": [
+                            "yaml"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "dlc_config",
+                                "file_structure": "key_value_pairs",
+                                "file_format": "yaml"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "engine",
+                    "name": "Engine",
+                    "required": false,
+                    "hidden": false,
+                    "help": "Specifies the backend engine to use for training the network. Either \"tensorflow\" or \"pytorch\". If empty, reads the engine value in the input config.yaml. DeepLabCut recommends using pytorch since it is faster. The tensorflow backend will be deprecated by the end of 2024.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Config",
+                            "group_order": 0
+                        },
+                        "choices": [
+                            "pytorch",
+                            "tensorflow"
+                        ],
+                        "display_options": [
+                            "pytorch",
+                            "tensorflow"
+                        ]
+                    },
+                    "default": "pytorch"
+                },
+                {
+                    "key": "training_fraction",
+                    "name": "Training Fraction",
+                    "required": false,
+                    "hidden": false,
+                    "help": "The fraction of labeled data to use for training the network, the remainder is used for testing the network for validation. This value is automatically calculated if “Train Video Files” and “Test Video Files” are specified.  If empty, and no “Train Video Files” and “Test Video Files” are specified, then the value in the input config file is used.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolFloatRangeParam",
+                        "param_datatype": "float",
+                        "display": {
+                            "group": "Config",
+                            "group_order": 1
+                        },
+                        "max": 1.0,
+                        "min": 0
+                    },
+                    "default": 0.95
+                },
+                {
+                    "key": "p_cutoff",
+                    "name": "P Cutoff",
+                    "required": false,
+                    "hidden": false,
+                    "help": "Cutoff threshold for the confidence of model results. If used, then results with a confidence below the cutoff are omitted from analysis. This is used when generating evaluation results, and can be used downstream to filter analyses on novel videos.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolFloatRangeParam",
+                        "param_datatype": "float",
+                        "display": {
+                            "group": "Config",
+                            "group_order": 2
+                        },
+                        "max": 1.0,
+                        "min": 0
+                    },
+                    "default": 0.6
+                },
+                {
+                    "key": "train_files",
+                    "name": "Train Files",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Comma-separated list of video file names from labeled data to use for training the network. Must be specified if “Test Video Files” is passed. If empty, then train images are automatically selected from labeled data.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Create Training Dataset",
+                            "group_order": 0
+                        }
+                    },
+                    "default": "auto"
+                },
+                {
+                    "key": "test_files",
+                    "name": "Test Files",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Comma-separated list of video file names from labeled data to use for testing the network. Must be specified if “Train Video Files” is passed. If empty, then test images are automatically selected from labeled data.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Create Training Dataset",
+                            "group_order": 1
+                        }
+                    },
+                    "default": "auto"
+                },
+                {
+                    "key": "net_type",
+                    "name": "Net Type",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Type of network. Currently supported options are: resnet_50, resnet_101, resnet_152, mobilenet_v2_1.0, mobilenet_v2_0.75, mobilenet_v2_0.5, mobilenet_v2_0.35, efficientnet-b0, efficientnet-b, efficientnet-b2, efficientnet-b3, efficientnet-b4, efficientnet-b5, efficientnet-b6",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Create Training Dataset",
+                            "group_order": 2
+                        },
+                        "choices": [
+                            "resnet_50",
+                            "resnet_101",
+                            "resnet_152",
+                            "mobilenet_v2_1.0",
+                            "mobilenet_v2_0.75",
+                            "mobilenet_v2_0.5",
+                            "mobilenet_v2_0.35",
+                            "efficientnet-b0",
+                            "efficientnet-b",
+                            "efficientnet-b2",
+                            "efficientnet-b3",
+                            "efficientnet-b4",
+                            "efficientnet-b5",
+                            "efficientnet-b6"
+                        ],
+                        "display_options": [
+                            "resnet_50",
+                            "resnet_101",
+                            "resnet_152",
+                            "mobilenet_v2_1.0",
+                            "mobilenet_v2_0.75",
+                            "mobilenet_v2_0.5",
+                            "mobilenet_v2_0.35",
+                            "efficientnet-b0",
+                            "efficientnet-b",
+                            "efficientnet-b2",
+                            "efficientnet-b3",
+                            "efficientnet-b4",
+                            "efficientnet-b5",
+                            "efficientnet-b6"
+                        ]
+                    },
+                    "default": "resnet_50"
+                },
+                {
+                    "key": "augmenter_type",
+                    "name": "Augmenter Type",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Type of augmenter. Currently supported options are: default, scalecrop, imgaug, tensorpack, deterministic",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Create Training Dataset",
+                            "group_order": 3
+                        },
+                        "choices": [
+                            "default",
+                            "scalecrop",
+                            "imgaug",
+                            "tensorpack",
+                            "deterministic"
+                        ],
+                        "display_options": [
+                            "default",
+                            "scalecrop",
+                            "imgaug",
+                            "tensorpack",
+                            "deterministic"
+                        ]
+                    },
+                    "default": "default"
+                },
+                {
+                    "key": "train_pose_cfg_file",
+                    "name": "Train Pose Config File",
+                    "required": false,
+                    "hidden": false,
+                    "help": "A config file describing the configuration settings for training the network.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Train Network",
+                            "group_order": 0
+                        },
+                        "is_dir": false,
+                        "multiple": false,
+                        "file_formats": [
+                            "yaml"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "dlc_config",
+                                "file_structure": "key_value_pairs",
+                                "file_format": "yaml"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "num_snapshots_to_evaluate",
+                    "name": "Number of Snapshots To Evaluate",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Sets how many snapshots are evaluated, i.e. states of the trained network. Every saving iteration a snapshot is stored, however only the last “Number of Snapshots to Evaluate” are kept. If \"all\", then all snapshots are evaluated.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Train Network",
+                            "group_order": 1
+                        }
+                    },
+                    "default": "all"
+                },
+                {
+                    "key": "save_iters",
+                    "name": "Save Iterations",
+                    "required": true,
+                    "hidden": false,
+                    "help": "The interval to save an iteration as a snapshot. If empty, then the value in pose_config.yaml is used.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network",
+                            "group_order": 2
+                        },
+                        "min": 1
+                    },
+                    "default": 50000
+                },
+                {
+                    "key": "max_iters",
+                    "name": "Max Iterations",
+                    "required": true,
+                    "hidden": false,
+                    "help": "The maximum number of iterations to train the model. If empty, then the value in pose_config.yaml is used.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network",
+                            "group_order": 3
+                        },
+                        "min": 1
+                    },
+                    "default": 250000
+                },
+                {
+                    "key": "allow_growth",
+                    "name": "Allow Growth",
+                    "required": true,
+                    "hidden": false,
+                    "help": "For some smaller GPUs, memory issues happen. If true then, the memory allocator does not pre-allocate the entire specified GPU memory region, instead starting small and growing as needed. See issue: https://forum.image.sc/t/how-to-stop-running-out-of-vram/30551/2",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Train Network",
+                            "group_order": 4
+                        }
+                    },
+                    "default": true
+                },
+                {
+                    "key": "keepdeconvweights",
+                    "name": "Keep Deconvolution Weights",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Restores the weights of the deconvolution layers (and the backbone) when training from a snapshot. Note that if you change the number of bodyparts, you need to set this to false for re-training.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Train Network",
+                            "group_order": 5
+                        }
+                    },
+                    "default": true
+                },
+                {
+                    "key": "pytorch_cfg_file",
+                    "name": "Pytorch Config File",
+                    "required": false,
+                    "hidden": false,
+                    "help": "A config file describing the pytorch configuration settings for training the network.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 0
+                        },
+                        "is_dir": false,
+                        "multiple": false,
+                        "file_formats": [
+                            "yaml"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "dlc_config",
+                                "file_structure": "key_value_pairs",
+                                "file_format": "yaml"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "device",
+                    "name": "Device",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) The torch device to train on (such as \"cpu\", \"cuda\", \"mps\", \"auto\"). Overrides the value set in pytorch_config.yaml.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 1
+                        }
+                    },
+                    "default": "auto"
+                },
+                {
+                    "key": "batch_size",
+                    "name": "Batch Size",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) The batch size to train with. Overrides the value set in pytorch_config.yaml. Small batch sizes (i.e., value of one) is good for training on a CPU, but this tool runs on a GPU instance. For GPUs a larger batch size should be used. The value should be the biggest power of 2 where you don't geta CUDA out-of-memory error, such as 8, 16, 32 or 64. This also allows you to increase the learning rate (empirically you can scale the learning rate by sqrt(batch_size) times). By default a batch size of 4 is used as this has shown to stay within memory limits on the instance used for this tool.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 2
+                        },
+                        "choices": [
+                            "1",
+                            "2",
+                            "4",
+                            "8",
+                            "16",
+                            "32",
+                            "64"
+                        ],
+                        "display_options": [
+                            "1",
+                            "2",
+                            "4",
+                            "8",
+                            "16",
+                            "32",
+                            "64"
+                        ]
+                    },
+                    "default": "4"
+                },
+                {
+                    "key": "epochs",
+                    "name": "Epochs",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) The maximum number of epochs to train the model. Overrides the value set in pytorch_config.yaml.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 3
+                        },
+                        "min": 1
+                    },
+                    "default": 200
+                },
+                {
+                    "key": "save_epochs",
+                    "name": "Save Epochs",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) The number of epochs between each snapshot save. Overrides the value set in pytorch_config.yaml.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 4
+                        },
+                        "min": 1
+                    },
+                    "default": 50
+                },
+                {
+                    "key": "detector_batch_size",
+                    "name": "Detector Batch Size",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) Only for top-down models. The batch size with which to train the detector. Overrides the value set in pytorch_config.yaml.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 5
+                        },
+                        "min": 1
+                    }
+                },
+                {
+                    "key": "detector_epochs",
+                    "name": "Detector Epochs",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) Only for top-down models. The maximum number of epochs to train the model. Overrides the value set in pytorch_config.yaml. Setting to 0 means the detector will not be trained.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 6
+                        },
+                        "min": 1
+                    }
+                },
+                {
+                    "key": "detector_save_epochs",
+                    "name": "Detector Save Epochs",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) Only for top-down models. The number of epochs between each snapshot of the detector is saved. Overrides the value set in pytorch_config.yaml.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolIntRangeParam",
+                        "param_datatype": "integer",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 7
+                        },
+                        "min": 1
+                    }
+                },
+                {
+                    "key": "pose_threshold",
+                    "name": "Pose Threshold",
+                    "required": false,
+                    "hidden": false,
+                    "help": "(pytorch only) Used for memory-replay. pseudo predictions that are below this are discarded for memory-replay.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolFloatRangeParam",
+                        "param_datatype": "float",
+                        "display": {
+                            "group": "Train Network (pytorch)",
+                            "group_order": 8
+                        },
+                        "max": 1.0,
+                        "min": 0
+                    },
+                    "default": 0.1
+                },
+                {
+                    "key": "test_pose_cfg_file",
+                    "name": "Test Pose Config File",
+                    "required": false,
+                    "hidden": false,
+                    "help": "A config file describing the configuration settings for testing (evaluating) the network.",
+                    "type": {
+                        "is_source": true,
+                        "param_type": "ToolPathParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Evaluate Network",
+                            "group_order": 0
+                        },
+                        "is_dir": false,
+                        "multiple": false,
+                        "file_formats": [
+                            "yaml"
+                        ],
+                        "file_filters": [
+                            {
+                                "file_type": "dlc_config",
+                                "file_structure": "key_value_pairs",
+                                "file_format": "yaml"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "key": "plot_evaluation_results",
+                    "name": "Plot Evaluation Results",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Plots the predictions of evaluation results on the train and test images. ",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Evaluate Network",
+                            "group_order": 1
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "body_parts_to_evaluate",
+                    "name": "Body Parts To Evaluate",
+                    "required": true,
+                    "hidden": false,
+                    "help": "The average error for evaluation results will be computed for those body parts only. The provided list has to be a subset of the defined body parts. Otherwise, set to “all” to compute error over all body parts.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolStringParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Evaluate Network",
+                            "group_order": 2
+                        }
+                    },
+                    "default": "all"
+                },
+                {
+                    "key": "rescale",
+                    "name": "Rescale",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Evaluate the model at the 'global_scale' variable (as set in the pose_config.yaml file for a particular project). I.e. every image will be resized according to that scale and prediction will be compared to the resized ground truth. The error will be reported in pixels at rescaled to the original size. I.e. For a [200,200] pixel image evaluated at global_scale=.5, the predictions are calculated on [100,100] pixel images, compared to 1/2*ground truth and this error is then multiplied by 2. The evaluation images are also shown for the original size.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Evaluate Network",
+                            "group_order": 3
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "per_keypoint_evaluation",
+                    "name": "Per Keypoint Evaluation",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Compute the train and test RMSE for each keypoint, and save the results to a {model_name}-keypoint-results.csv in the evalution-results folder",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Evaluate Network",
+                            "group_order": 4
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "generate_maps",
+                    "name": "Generate Maps",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Plot the scoremaps, locref layers, and PAFs from the evaluation results.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Evaluate Network",
+                            "group_order": 5
+                        }
+                    },
+                    "default": false
+                },
+                {
+                    "key": "optimal_snapshot_metric",
+                    "name": "Optimal Snapshot Metric",
+                    "required": true,
+                    "hidden": false,
+                    "help": "The type of error from the evaluation results to minimize in order to find the optimal snapshot. Options are: Train Error, Test Error, Train Error w/ p-cutoff, Test Error w/ p-cutoff",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolChoiceParam",
+                        "param_datatype": "string",
+                        "display": {
+                            "group": "Compress Outputs",
+                            "group_order": 0
+                        },
+                        "choices": [
+                            "Train Error",
+                            "Test Error",
+                            "Train Error w/ p-cutoff",
+                            "Test Error w/ p-cutoff"
+                        ],
+                        "display_options": [
+                            "Train Error",
+                            "Test Error",
+                            "Train Error w/ p-cutoff",
+                            "Test Error w/ p-cutoff"
+                        ]
+                    },
+                    "default": "Test Error"
+                },
+                {
+                    "key": "save_optiomal_snapshot",
+                    "name": "Save Optiomal Snapshot",
+                    "required": true,
+                    "hidden": false,
+                    "help": "Only keep the snapshot with the smallest error from the evaluation results in the zipped model output. The error to minimize is indicated by the “Optimal Snapshot Error Metric” parameter.  This significantly reduces the size of the zipped model output uploaded to IDEAS.  If set to false, then all snapshots evaluated are included in the zipped model output. This is controlled by the “Snapshots to Evaluate” parameter.",
+                    "type": {
+                        "is_source": false,
+                        "param_type": "ToolBooleanParam",
+                        "param_datatype": "boolean",
+                        "display": {
+                            "group": "Compress Outputs",
+                            "group_order": 1
+                        }
+                    },
+                    "default": true
+                }
+            ],
+            "results": [
+                {
+                    "group_key": "training__train_model",
+                    "group_name": "Training  Train Model",
+                    "group_type": "tool_output",
+                    "required": true,
+                    "multiple": false,
+                    "files": [
+                        {
+                            "result_key": "model",
+                            "result_name": "Model",
+                            "help": "A zip file of the dlc-models folder from the DLC project which contains the model trained by DLC. The zip file will also contain some summary evaluation_results from the DLC project.",
+                            "required": true,
+                            "multiple": false,
+                            "file_formats": [
+                                "zip"
+                            ],
+                            "file_type": "dlc_model"
+                        },
+                        {
+                            "result_key": "evaluation_results",
+                            "result_name": "Evaluation Results",
+                            "help": "A zip file containing evaluation results of the trained model including plots of model predictions on labeled data, scoremaps, and locref maps.",
+                            "required": true,
+                            "multiple": false,
+                            "file_formats": [
+                                "zip"
+                            ],
+                            "file_type": "dlc_evaluation_results"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

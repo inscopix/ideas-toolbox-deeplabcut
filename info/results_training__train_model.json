@@ -1,0 +1,182 @@
+[
+    {
+        "key": "model",
+        "analysis_table_result_column_name": "Model",
+        "file_type": "dlc_model",
+        "file_format": "zip",
+        "file_structure": "archive",
+        "file_category": "result",
+        "help": "A zip file of the dlc-models folder from the DLC project which contains the model trained by DLC. The zip file will also contain some summary evaluation_results from the DLC project.",
+        "required": true,
+        "multiple": false,
+        "is_preview": false,
+        "is_output": true,
+        "parent_keys": [
+            "labeled_data_zip_file",
+            "config_file"
+        ],
+        "preview_of": []
+    },
+    {
+        "key": "evaluation_results_error_distribution_pcutoff_preview",
+        "analysis_table_result_column_name": "Evaluation Results Error Distribution with p-cutoff Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Error distributions of the optimal snapshot without p-cutoff.",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "evaluation_results_maps_scmap_movie_preview",
+        "analysis_table_result_column_name": "Evaluation Results Score Maps Movie Preview",
+        "file_type": "",
+        "file_format": "mp4",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Score maps of training images. Score maps look for parts of image that have a wanted feature",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "evaluation_results_plots_test_movie_preview",
+        "analysis_table_result_column_name": "Evaluation Results Test Plots Movie Preview",
+        "file_type": "",
+        "file_format": "mp4",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Evaluation results plotted on test images",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "evaluation_results_maps_locref_movie_preview",
+        "analysis_table_result_column_name": "Evaluation Results Locref Maps Movie Preview",
+        "file_type": "",
+        "file_format": "mp4",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Locref maps of training images. Locref stands for location refinement layer. Location refinement tries to find position of bodyparts based on their relation to other bodyparts.",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "learning_stats_preview",
+        "analysis_table_result_column_name": "Learning Stats Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Training loss over iterations, categorized by the learning rate used for each iteration.",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "evaluation_results",
+        "analysis_table_result_column_name": "Evaluation Results",
+        "file_type": "dlc_evaluation_results",
+        "file_format": "zip",
+        "file_structure": "archive",
+        "file_category": "result",
+        "help": "A zip file containing evaluation results of the trained model including plots of model predictions on labeled data, scoremaps, and locref maps.",
+        "required": true,
+        "multiple": false,
+        "is_preview": false,
+        "is_output": true,
+        "parent_keys": [
+            "labeled_data_zip_file",
+            "config_file"
+        ],
+        "preview_of": []
+    },
+    {
+        "key": "evaluation_results_preview",
+        "analysis_table_result_column_name": "Evaluation Results Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Test and training errors of all snapshots evaluated.",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "evaluation_results_plots_train_movie_preview",
+        "analysis_table_result_column_name": "Evaluation Results Train Plots Movie Preview",
+        "file_type": "",
+        "file_format": "mp4",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Evaluation results plotted on train images",
+        "required": true,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    },
+    {
+        "key": "evaluation_results_error_distribution_preview",
+        "analysis_table_result_column_name": "Evaluation Results Error Distribution Preview",
+        "file_type": "",
+        "file_format": "png",
+        "file_structure": "",
+        "file_category": "result",
+        "help": "Error distributions of the optimal snapshot",
+        "required": false,
+        "multiple": false,
+        "is_preview": true,
+        "is_output": false,
+        "parent_keys": [],
+        "preview_of": [
+            "model",
+            "evaluation_results"
+        ]
+    }
+]

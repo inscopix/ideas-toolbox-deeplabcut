@@ -1,0 +1,51 @@
+{
+    "dlc_pose_estimates.0": {
+        "dlc": {
+            "task": "General_DLC",
+            "scorer": "Ludo",
+            "date": "Dec16",
+            "multi_animal_project": false,
+            "model_neural_net_type": "resnet_50",
+            "body_parts": "tail_tip,tail_base,R_hind,L_hind,neck,R_fore,L_fore,nose",
+            "snapshot": 420000
+        }
+    },
+    "dlc_annotations": {
+        "dlc": {
+            "task": "General_DLC",
+            "scorer": "Ludo",
+            "date": "Dec16",
+            "multi_animal_project": false,
+            "model_neural_net_type": "resnet_50",
+            "body_parts": "tail_tip,tail_base,R_hind,L_hind,neck,R_fore,L_fore,nose",
+            "snapshot": 420000
+        }
+    },
+    "dlc_labeled_movie.0": {
+        "spacingInfo": {
+            "numPixels": {
+                "x": 1000,
+                "y": 1000
+            }
+        },
+        "timingInfo": {
+            "cropped": [],
+            "dropped": [],
+            "numTimes": 20,
+            "period": {
+                "num": 50000,
+                "den": 1000000
+            },
+            "sampling_rate": 20.0
+        },
+        "dlc": {
+            "task": "General_DLC",
+            "scorer": "Ludo",
+            "date": "Dec16",
+            "multi_animal_project": false,
+            "model_neural_net_type": "resnet_50",
+            "body_parts": "tail_tip,tail_base,R_hind,L_hind,neck,R_fore,L_fore,nose",
+            "snapshot": 420000
+        }
+    }
+}

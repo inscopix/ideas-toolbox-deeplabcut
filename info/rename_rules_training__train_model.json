@@ -1,0 +1,84 @@
+{
+    "training__train_model": {
+        "model": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "model"
+        },
+        "evaluation_results_error_distribution_pcutoff_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_error_distribution_pcutoff_preview"
+        },
+        "evaluation_results_maps_scmap_movie_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_maps_scmap_movie_preview"
+        },
+        "evaluation_results_plots_test_movie_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_plots_test_movie_preview"
+        },
+        "evaluation_results_maps_locref_movie_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_maps_locref_movie_preview"
+        },
+        "learning_stats_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "learining_stats_preview"
+        },
+        "evaluation_results": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results"
+        },
+        "evaluation_results_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_preview"
+        },
+        "evaluation_results_plots_train_movie_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_plots_train_movie_preview"
+        },
+        "evaluation_results_error_distribution_preview": {
+            "pattern": [
+                "timestamp",
+                "labeled_data_zip_file",
+                "custom_string"
+            ],
+            "custom_string": "evaluation_results_error_distribution_preview"
+        }
+    }
+}

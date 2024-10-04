@@ -1,0 +1,81 @@
+    # Project definitions (do not edit)
+Task: General_DLC
+scorer: Ludo
+date: Dec16
+multianimalproject: false
+identity:
+
+    # Project path (change when moving around)
+    # Not actually used for inference but required to specify
+    # so provide a fake path
+project_path: /model
+
+    # Annotation data set configuration (and individual video cropping parameters)
+video_sets:
+  # Not actually used for inference but required to specify
+  # so provide a fake path
+  /videos/video.mp4:
+    crop: 390, 1390, 130, 1130
+bodyparts:
+- tail_tip
+- tail_base
+- R_hind
+- L_hind
+- neck
+- R_fore
+- L_fore
+- nose
+
+    # Fraction of video to start/stop when extracting frames for labeling/refinement
+
+    # Fraction of video to start/stop when extracting frames for labeling/refinement
+start: 0
+stop: 1
+numframes2pick: 20
+
+    # Plotting configuration
+  # TODO (IT-609): give better names to body parts
+skeleton:
+- - nose
+  - neck
+- - neck
+  - R_fore
+- - neck
+  - L_fore
+- - neck
+  - tail_base
+- - tail_base
+  - R_hind
+- - tail_base
+  - L_hind
+- - tail_base
+  - tail_tip
+skeleton_color: black
+pcutoff: 0.6
+dotsize: 3
+alphavalue: 0.7
+colormap: rainbow
+
+    # Training,Evaluation and Analysis configuration
+TrainingFraction:
+- 0.95
+iteration: 0
+default_net_type: resnet_50
+default_augmenter: imgaug
+snapshotindex: 0
+batch_size: 8
+
+    # Cropping Parameters (for analysis and outlier frame detection)
+cropping: false
+    #if cropping is true for analysis, then set the values here:
+x1: 0
+x2: 640
+y1: 277
+y2: 624
+
+    # Refinement configuration (parameters from annotation dataset configuration also relevant in this stage)
+corner2move2:
+- 50
+- 50
+move2corner: true
+gputouse: -1 # Set to -1 to use CPU

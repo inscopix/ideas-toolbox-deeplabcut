@@ -1,0 +1,25 @@
+{
+    "movie_files": ["/ideas/data/2023-01-31-12-12-08_video_e3v8251-20230131T121212-122254_trimmed_1s.avi"],
+    "experiment_annotations_format": "csv",
+    "crop_rect": [
+        {
+            "groupKey": "crop_rect",
+            "left": 325,
+            "top": 125,
+            "width": 1000,
+            "height": 1000,
+            "name": "Crop Rectangle",
+            "stroke": "#EB823B",
+            "type": "boundingBox"
+        }
+    ],
+    "window_length": 5,
+    "displayed_body_parts": "all",
+    "p_cutoff": 0.6,
+    "dot_size": 5,
+    "color_map": "rainbow",
+    "keypoints_only": false,
+    "output_frame_rate": 20,
+    "draw_skeleton": false,
+    "trail_points": 0
+}

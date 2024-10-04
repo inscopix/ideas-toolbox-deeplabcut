@@ -1,0 +1,1 @@
+python3.10 /ideas/function_caller.py workflow__run_workflow

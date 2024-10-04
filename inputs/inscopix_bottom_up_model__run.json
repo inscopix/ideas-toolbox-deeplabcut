@@ -1,0 +1,14 @@
+{
+    "movie_files": ["/ideas/data/series/Group-20240111-080531_2024-01-12-08-55-21_sched_0.isxb", "/ideas/data/series/Group-20240111-080531_2024-01-12-08-55-21_sched_1.isxb"],
+    "experiment_annotations_format": "csv",
+    "crop_rect": [],
+    "window_length": 5,
+    "displayed_body_parts": "all",
+    "p_cutoff": 0.6,
+    "dot_size": 5,
+    "color_map": "rainbow",
+    "keypoints_only": false,
+    "output_frame_rate": 20,
+    "draw_skeleton": false,
+    "trail_points": 0
+}
