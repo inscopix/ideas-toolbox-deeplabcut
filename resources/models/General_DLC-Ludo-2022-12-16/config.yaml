@@ -78,4 +78,3 @@ corner2move2:
 - 50
 - 50
 move2corner: true
-gputouse: -1 # Set to -1 to use CPU

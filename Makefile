@@ -32,7 +32,7 @@ endif
 # vars for gpu functionality
 # can set which gpu to use
 ifndef GPU_TO_USE
-	GPU_TO_USE=-1
+	GPU_TO_USE=0
 endif
 
 # if a codebuild id exists, that means the toolbox is being built and tested on aws
@@ -43,13 +43,11 @@ ifdef CODEBUILD_BUILD_ID
 endif
 
 ifndef USE_GPU
-	USE_GPU=0
+	USE_GPU=1
 endif
 
 # if using gpu, set the runtime to be nvidia
 # and configure the gpu
-# otherwise, just set runtime to use the CPU
-
 ifeq ($(USE_GPU), 1)
 	RUNTIME=--runtime nvidia --gpus all
 else
@@ -72,12 +70,10 @@ clean:
 	-docker images | grep $(FULL_NAME) | awk '{print $$1 ":" $$2}' | grep -v $(VERSION) | xargs docker rmi
 	-rm -rf $(PWD)/outputs
 
-build: 
-	@PACKAGE_REQS=$$(if [ -f ../.dev_requirements.txt ]; then cat ../.dev_requirements.txt | grep -v "#" | tr '\n' ' '; else echo "ideas-public-python-utils@git+https://@github.com/inscopix/ideas-public-python-utils.git@0.0.17 isx==2.0.0"; fi) && \
-	echo "Building docker image && \
+build:
+	@echo "Building docker image..."
 	DOCKER_BUILDKIT=1 docker build . -t $(IMAGE_TAG) \
 		--platform ${PLATFORM} \
-		--build-arg PACKAGE_REQS="$$PACKAGE_REQS" \
 		--target base
 
 test: build clean
@@ -112,4 +108,3 @@ run: build clean
 		$(call run_command,$(TOOL)) \
 	&& docker cp $(CONTAINER_NAME):/ideas/outputs $(PWD) \
 	&& docker rm $(CONTAINER_NAME)
-	

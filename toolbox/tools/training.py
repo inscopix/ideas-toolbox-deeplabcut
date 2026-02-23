@@ -14,7 +14,6 @@ from scipy.stats import rankdata
 import seaborn as sns
 import cv2
 
-
 from toolbox.utils.utilities import (
     get_timing_spacing_metadata_from_labeled_movie,
 )
@@ -29,12 +28,12 @@ OUTPUT_METDATA_FILE = "output_metadata.json"
 # output and preview filenames
 DLC_MODELS_OUTPUT_FILE = "model.zip"
 EVALUATION_RESULTS_OUTPUT_FILE = "evaluation_results.zip"
-EVALUATION_RESULTS_PREVIEW_FILE = "evaluation_results_preview.png"
+EVALUATION_RESULTS_PREVIEW_FILE = "evaluation_results_preview.svg"
 EVALUATION_RESULTS_ERROR_DIST_PREVIEW_FILE = (
-    "evaluation_results_error_distribution_preview.png"
+    "evaluation_results_error_distribution_preview.svg"
 )
 EVALUATION_RESULTS_ERROR_DIST_PCUTOFF_PREVIEW_FILE = (
-    "evaluation_results_error_distribution_pcutoff_preview.png"
+    "evaluation_results_error_distribution_pcutoff_preview.svg"
 )
 EVALUATION_RESULTS_PLOTS_TRAIN_MOVIE_PREVIEW_FILE = (
     "evaluation_results_plots_train_movie_preview.mp4"
@@ -48,7 +47,7 @@ EVALUATION_RESULTS_MAPS_LOCREF_MOVIE_PREVIEW_FILE = (
 EVALUATION_RESULTS_MAPS_SCMAP_MOVIE_PREVIEW_FILE = (
     "evaluation_results_maps_scmap_movie_preview.mp4"
 )
-LEARNING_STATS_PREVIEW_FILE = "learning_stats_preview.png"
+LEARNING_STATS_PREVIEW_FILE = "learning_stats_preview.svg"
 
 # types of errors calculated for evaluation results
 error_types_dict = {
@@ -132,7 +131,7 @@ def _calculate_optimal_snapshot(
 
     rank = rankdata(errors, method="ordinal")
     optimal_ind = np.where(rank == 1)[0][0]
-    return evaluation_results_df[x][optimal_ind]
+    return evaluation_results_df[x][optimal_ind], optimal_ind
 
 
 def _generate_evaluation_results_preview(
@@ -151,10 +150,13 @@ def _generate_evaluation_results_preview(
     :param preview_filename: The name of the preview file.
     """
 
-    data = {"Training Iteration": [], "Error Type": [], "Error (px)": []}
-    x = "Training epochs" if engine == "pytorch" else "Training iterations:"
-    for i, iteration in enumerate(evaluation_results_df[x]):
-        data["Training Iteration"] += [iteration] * (4)
+    df_x = "Training epochs" if engine == "pytorch" else "Training iterations:"
+    data_x = (
+        "Training Epochs" if engine == "pytorch" else "Training Iterations"
+    )
+    data = {data_x: [], "Error Type": [], "Error (px)": []}
+    for i, iteration in enumerate(evaluation_results_df[df_x]):
+        data[data_x] += [iteration] * (4)
         for name, error_type in error_types_dict[engine].items():
             data["Error Type"] += [name]
             data["Error (px)"] += [
@@ -162,17 +164,15 @@ def _generate_evaluation_results_preview(
             ]
 
     df = pd.DataFrame(data)
-    df_wide = df.pivot(
-        index="Training Iteration", columns="Error Type", values="Error (px)"
-    )
+    df_wide = df.pivot(index=data_x, columns="Error Type", values="Error (px)")
 
     ax = sns.lineplot(
         df_wide,
         palette=sns.color_palette("winter", len(error_types_dict[engine])),
     )
-    optimal_df = evaluation_results_df.query(f"`{x}` == {optimal_snapshot}")
+    optimal_df = evaluation_results_df.query(f"`{df_x}` == {optimal_snapshot}")
     ax.scatter(
-        [[optimal_df[x]]],
+        [[optimal_df[df_x]]],
         [[optimal_df[error_types_dict[engine][optimal_snapshot_metric]]]],
         label="Optimal Snapshot",
         color="deeppink",
@@ -181,8 +181,8 @@ def _generate_evaluation_results_preview(
 
     plt.suptitle("Evaluation Results: Error vs. Iterations")
     plt.ylabel("RMSE (px)")
-    plt.xticks(evaluation_results_df[x])
-    plt.savefig(preview_filename)
+    plt.xticks(evaluation_results_df[df_x])
+    plt.savefig(preview_filename, transparent=True)
 
     plt.clf()
 
@@ -358,7 +358,7 @@ def _generate_evaluation_results_error_distribution_preview(
     plt.suptitle("Optimal Snapshot Error Distribution")
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
-    plt.savefig(preview_filename)
+    plt.savefig(preview_filename, transparent=True)
 
     plt.clf()
 
@@ -373,7 +373,7 @@ def _generate_evaluation_results_error_distribution_preview(
     plt.suptitle("Optimal Snapshot Error Distribution (w/ p-cutoff)")
     plt.tight_layout()
     plt.subplots_adjust(top=0.85)
-    plt.savefig(pcutoff_preview_filename)
+    plt.savefig(pcutoff_preview_filename, transparent=True)
 
     plt.clf()
 
@@ -557,20 +557,65 @@ def _generate_learning_stats_preview(
     if engine == "pytorch":
         df = pd.read_csv(
             learning_stats_file,
-            # header=None,
-            # names=["Training Iteration", "Loss", "Learning Rate"],
         )
 
         df = df[["step", "losses/train.total_loss"]]
         df = df.rename(
             columns={"step": "Epoch", "losses/train.total_loss": "Loss"}
         )
+
+        # load pytorch to get learning rate schedule
+        pytorch_config_file = os.path.join(
+            project_path,
+            _get_dlc_models_dir_name(engine),
+            f"iteration-{iteration}",
+            model_name,
+            "train",
+            "pytorch_config.yaml",
+        )
+
+        with open(pytorch_config_file, "r") as f:
+            pytorch_config = yaml.safe_load(f)
+
+        schedule_epochs = pytorch_config["runner"]["scheduler"]["params"][
+            "milestones"
+        ]
+        schedule_learning_rates = pytorch_config["runner"]["scheduler"][
+            "params"
+        ]["lr_list"]
+        schedule_learning_rates = [x[0] for x in schedule_learning_rates]
+
+        initial_learning_rate = pytorch_config["runner"]["optimizer"][
+            "params"
+        ]["lr"]
+        schedule_epochs = [1] + schedule_epochs
+        schedule_learning_rates = [
+            initial_learning_rate
+        ] + schedule_learning_rates
+
+        learning_rates = []
+        for epoch in df["Epoch"]:
+            for i in range(len(schedule_epochs)):
+                if i == len(schedule_epochs) - 1:
+                    learning_rates.append(schedule_learning_rates[i])
+                    break
+
+                if (
+                    epoch >= schedule_epochs[i]
+                    and epoch < schedule_epochs[i + 1]
+                ):
+                    learning_rates.append(schedule_learning_rates[i])
+                    break
+        df["Learning Rate"] = learning_rates
+
         ax = sns.scatterplot(
             df,
             x="Epoch",
             y="Loss",
-            # hue="Learning Rate",
-            # palette=sns.color_palette("cool", len(df["Learning Rate"].unique())),
+            hue="Learning Rate",
+            palette=sns.color_palette(
+                "cool", len(df["Learning Rate"].unique())
+            ),
         )
 
         ax.plot(
@@ -607,7 +652,7 @@ def _generate_learning_stats_preview(
     ax.set_title("Learning Stats")
     plt.tight_layout()
 
-    plt.savefig(preview_filename)
+    plt.savefig(preview_filename, transparent=True)
     plt.clf()
 
 
@@ -634,9 +679,9 @@ def _save_output_metadata(
     output_metadata = {}
     for file in output_movie_files:
         basename, _ = os.path.splitext(os.path.basename(file))
-        output_metadata[
-            basename
-        ] = get_timing_spacing_metadata_from_labeled_movie(file)
+        output_metadata[basename] = (
+            get_timing_spacing_metadata_from_labeled_movie(file)
+        )
 
     for file in output_dlc_files:
         basename, _ = os.path.splitext(os.path.basename(file))
@@ -656,12 +701,12 @@ def _save_output_metadata(
         output_metadata[key][DLC_METADATA_KEY]["task"] = config["Task"]
         output_metadata[key][DLC_METADATA_KEY]["scorer"] = config["scorer"]
         output_metadata[key][DLC_METADATA_KEY]["date"] = config["date"]
-        output_metadata[key][DLC_METADATA_KEY][
-            "multi_animal_project"
-        ] = config["multianimalproject"]
-        output_metadata[key][DLC_METADATA_KEY][
-            "model_neural_net_type"
-        ] = config["default_net_type"]
+        output_metadata[key][DLC_METADATA_KEY]["multi_animal_project"] = (
+            config["multianimalproject"]
+        )
+        output_metadata[key][DLC_METADATA_KEY]["model_neural_net_type"] = (
+            config["default_net_type"]
+        )
         output_metadata[key][DLC_METADATA_KEY]["body_parts"] = ",".join(
             config[
                 (
@@ -1128,12 +1173,13 @@ def train_model(
         detector_epochs=detector_epochs,
         detector_save_epochs=detector_save_epochs,
         pose_threshold=pose_threshold,
-        freeze_bn_stats=True,
     )
 
     # evaluate the network
     # https://github.com/DeepLabCut/DeepLabCut/blob/v2.3.10/deeplabcut/pose_estimation_tensorflow/core/evaluate.py
     logger.info("Evaluating the network")
+    logger.info("Updating snapshotindex to all for evaluation:")
+    config["snapshotindex"] = "all"
     dlc.auxiliaryfunctions.write_config(config_file, config)
     dlc.evaluate_network(
         config=config_file,
@@ -1146,24 +1192,11 @@ def train_model(
         rescale=rescale,
         modelprefix="",
         per_keypoint_evaluation=per_keypoint_evaluation,
-        # snapshots_to_evaluate="all",
         engine=None,
         device=device,
         transform=None,
         detector_snapshot_index=None,
     )
-
-    # generate maps from evaluation results
-    if generate_maps:
-        if engine == "pytorch":
-            logger.warning("Cannot generate maps for pytorch engine")
-        else:
-            logger.info(
-                "Extracting plots of the scoremaps, locref layers, and PAFs from evaluation results"
-            )
-            dlc.extract_save_all_maps(
-                config=config_file, shuffle=shuffle, Indices=None
-            )
 
     logger.info("Reading evaluation results")
     # read evaluation results in order to calculate optimal snapshot
@@ -1177,12 +1210,30 @@ def train_model(
     )
     logger.info(f"Got evaluation results: {evaluation_results_df}")
 
-    optimal_snapshot = _calculate_optimal_snapshot(
+    optimal_snapshot, optimal_snapshot_ind = _calculate_optimal_snapshot(
         evaluation_results_df,
         optimal_snapshot_metric=optimal_snapshot_metric,
         engine=engine,
     )
     logger.info(f"Calculated optimal snapshot: {optimal_snapshot}")
+
+    # generate maps from evaluation results
+    if generate_maps:
+        if engine == "pytorch":
+            logger.warning("Cannot generate maps for pytorch engine")
+        else:
+            logger.info("Generating maps for optimal snapshot")
+            logger.info(
+                "Extracting plots of the scoremaps, locref layers, and PAFs from evaluation results"
+            )
+            logger.info(
+                f"Updating snapshotindex to optimal snapshot {optimal_snapshot_ind} for maps"
+            )
+            config["snapshotindex"] = int(optimal_snapshot_ind)
+            dlc.auxiliaryfunctions.write_config(config_file, config)
+            dlc.extract_save_all_maps(
+                config=config_file, shuffle=shuffle, Indices=None
+            )
 
     # generate error distribution of optimal snapshot
     logger.info("Generating error distribution for optimal snapshot")
