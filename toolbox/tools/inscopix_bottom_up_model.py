@@ -46,8 +46,8 @@ def run(
             "height": ....
         }]
         If empty, then no cropping is applied.
-    :param int window_length: Length of the median filter to apply on the model results.
-        Must be an odd number. If zero, then no filtering is applied.
+    :param int window_length: Length of the median filter, in samples, to apply on the model results.
+        Must be an odd number. If 1, then no filtering is applied.
     :param str displayed_body_parts: Selects the body parts that are plotted in the video.
         If all, then all body parts from config.yaml are used.
     :param float p_cutoff: Cutoff threshold for predictions when labelling the

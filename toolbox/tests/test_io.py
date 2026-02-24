@@ -389,7 +389,7 @@ def test_get_timestamps_from_movies_invalid_file_extension(movie_file):
         get_timestamps_from_movies([movie_file])
 
     exception = cm.value
-    assert exception.message == (
+    assert str(exception) == (
         f"Cannot get timestamps from movie file ({os.path.basename(movie_file)}) with unsupported file extension."
     )
 

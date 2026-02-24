@@ -50,7 +50,7 @@ input_dir = "/ideas/data"
                     "type": "boundingBox",
                 }
             ],
-            0,
+            1,
             "neck,nose",
             0.4,
             3,
@@ -223,5 +223,5 @@ def test_inscopix_bottom_up_model_run_invalid_color_map(color_map, output_dir):
         )
     assert (
         str(error.value)
-        == f"Color map ({color_map}) must be one of the following matplotlib color maps: {matplotlib.colormaps()}"
+        == f"Color map ({color_map}) must be one of the following matplotlib color maps: {matplotlib.colormaps()}."
     )

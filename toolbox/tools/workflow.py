@@ -1,25 +1,24 @@
-import json
-import logging
-import os
-import shutil
-import time
-import zipfile
-from glob import glob
-from pathlib import Path
-from typing import List, Optional
-import yaml
 import deeplabcut as dlc
 from deeplabcut.core.engine import Engine
+from glob import glob
+from ideas.exceptions import IdeasError
 import isx
+import json
+import logging
 import matplotlib
 import numpy as np
-from ideas.exceptions import IdeasError
+import os
+from pathlib import Path
+import shutil
+import time
+from typing import List, Optional
+import yaml
+import zipfile
 from toolbox.utils.io import convert_dlc_h5_to_annotations
 from toolbox.utils.utilities import (
-    count_video_frames,
     get_timing_spacing_metadata_from_labeled_movie,
-    order_movie_files,
     update_config_file,
+    count_video_frames,
 )
 
 logger = logging.getLogger()
@@ -28,6 +27,7 @@ logger = logging.getLogger()
 # default name of model config file
 MODEL_CONFIG_FILE = "config.yaml"
 DLC_MODELS_DIR = "dlc-models"
+DLC_MODELS_PYTORCH_DIR = "dlc-models-pytorch"
 POSE_CFG_FILE = "pose_cfg.yaml"
 PYTORCH_CFG_FILE = "pytorch_config.yaml"
 
@@ -51,7 +51,8 @@ PREVIEWS = [
     PREVIEW_PLOT,
     PREVIEW_TRAJECTORY,
 ]
-PREVIEW_EXT = "png"
+PREVIEW_EXT = "svg"
+PREVIEW_EXT_TRAJECTORY = "png"
 PREVIEW_DIR = "plot-poses"
 
 DLC_METADATA_KEY = "dlc"
@@ -120,8 +121,13 @@ def _get_snapshot_nums(snapshot_dir, recursive=False):
         _, basename = os.path.split(filename)
         start_index = basename.find("-")
         end_index = basename.find(".")
-        snapshot_num = int(basename[start_index + 1 : end_index])
-        snapshot_nums.add(snapshot_num)
+        try:
+            snapshot_num = int(basename[start_index + 1 : end_index])
+            snapshot_nums.add(snapshot_num)
+        except:
+            # sometimes files can be named snapshot-<num>-best by DLC
+            # DLC will still be able to detect those files so just log a warning here
+            logger.warning("Failed to extract number from snapshot filename")
     return list(snapshot_nums)
 
 
@@ -137,18 +143,16 @@ def _validate_one_snapshot(snapshot_dir):
     """
     snapshot_nums = _get_snapshot_nums(snapshot_dir, recursive=False)
     if len(snapshot_nums) > 1:
-        logger.warn(
+        logger.warning(
             f"Found {len(snapshot_nums)} snapshots. Consider removing unnecessary snapshots from the model dir before uploading to IDEAS in order to save on storage."
         )
     elif len(snapshot_nums) == 0:
-        logger.warn("No snapshots found!")
+        logger.warning("No snapshots found!")
     else:
         logger.info("Only one snapshot in the dir. Looks good.")
 
 
-def _validate_or_transform_model_dir(
-    model_dir, movie_files, output_dir=None, use_existing=False
-):
+def _validate_or_transform_model_dir(model_dir, movie_files, output_dir=None):
     """Validates a user-uploaded zipped model, or transforms it to a model dir that can be used by DLC.
 
     DLC has specific requirements for the structure & contents of a model dir, otherwise execution will fail.
@@ -159,263 +163,221 @@ def _validate_or_transform_model_dir(
     :param str model_dir: The model dir to validate or tranform.
     :param list movie_files: The movie files to pass to DLC if creating a new model dir.
     :param str output_dir: The output directory to store the model
-    :param bool use_existing: Flag indicating whether to use an existing project if it exists,
-        or create a new project and copy snapshot files from the input model.
     """
     logger.info("Validating contents of unzipped model dir")
 
     # check if model_dir contains config.yaml and dlc-models folder
     actual_config_file = os.path.join(model_dir, MODEL_CONFIG_FILE)
-    exists = os.path.exists(actual_config_file)
-    if exists and use_existing:
-        # if yes, verify contents of sub dirs
-        logger.info(
-            "Top-level of model dir is in expected format for DeepLabCut. Validatng contents of sub-dirs"
-        )
+    config_exists = os.path.exists(actual_config_file)
+    engine = None
+    if config_exists:
+        # if yes, detect engine from config
+        logger.info("Found config file.")
         config = dlc.auxiliaryfunctions.read_config(actual_config_file)
+        engine = config["engine"]
 
-        # grab relevant values from config.yaml that determine sub-dir names
-        iteration = int(config["iteration"])
-        task = config["Task"]
-        date = config["date"]
-        training_fraction = int(config["TrainingFraction"][0] * 100.0)
+    # next search for dir which contains snapshot* files
+    logger.info(
+        "Searching for snapshot files recursively in unzipped model dir."
+    )
+    snapshot_dir = None
+    for filename in glob(f"{model_dir}/**/snapshot*", recursive=True):
+        file_dir, _ = os.path.split(filename)
+        logger.info(f"Found snapshot file: {filename}, in dir: {file_dir}")
+        if snapshot_dir:
+            if snapshot_dir != file_dir:
+                raise IdeasError(
+                    "Snapshots found in multiple directories, cannot determine which one to use. Place snapshot to use in one directory and remove others."
+                )
+        else:
+            snapshot_dir = file_dir
+    _validate_one_snapshot(snapshot_dir)
 
-        dlc_models_dir = os.path.join(model_dir, DLC_MODELS_DIR)
-        iteration_dir = os.path.join(dlc_models_dir, f"iteration-{iteration}")
-        logger.info(os.listdir(dlc_models_dir))
-        if not os.path.exists(iteration_dir):
-            raise IdeasError(
-                f"Could not find iteration-{iteration} dir within {DLC_MODELS_DIR} dir"
-            )
+    if snapshot_dir is None:
+        raise IdeasError("Failed to find any snapshots in zipped model.")
+    logger.info(f"Contents of snapshot_dir: {os.listdir(snapshot_dir)}")
 
-        logger.info(
-            f"Found iteration-{iteration} dir within {DLC_MODELS_DIR} dir"
-        )
-        model_name = f"{task}{date}-trainset{training_fraction}shuffle1"
-        trainset_dir = os.path.join(iteration_dir, model_name)
-        if not os.path.exists(trainset_dir):
-            raise IdeasError(
-                f"Could not find {model_name} dir within iteration-{iteration} dir"
-            )
-
-        logger.info(f"Found {model_name} dir within iteration-{iteration} dir")
-        test_dir = os.path.join(trainset_dir, "test")
-        train_dir = os.path.join(trainset_dir, "train")
-        if not os.path.exists(test_dir) or not os.path.exists(train_dir):
-            raise IdeasError(
-                f"Could not find test or train dir within {model_name} dir"
-            )
-
-        logger.info(f"Found test and train dirs within {model_name} dir")
-        if not os.path.exists(
-            os.path.join(test_dir, POSE_CFG_FILE)
-        ) or not os.path.exists(os.path.join(train_dir, POSE_CFG_FILE)):
-            raise IdeasError(
-                f"Could not find {POSE_CFG_FILE} within test or train dirs"
-            )
-
-        logger.info(f"Found {POSE_CFG_FILE} within test and train dirs")
-        _validate_one_snapshot(train_dir)
-        return model_dir, False
-    else:
-        # if not, then search for dir which contains snapshot* files
-        logger.info(
-            "Model dir is not expected format for DeepLabCut, searching for snapshot files recursively in this dir."
-        )
-        snapshot_dir = None
-        for filename in glob(f"{model_dir}/**/snapshot*", recursive=True):
-            file_dir, _ = os.path.split(filename)
-            logger.info(f"Found snapshot file: {filename}, in dir: {file_dir}")
-            if snapshot_dir:
-                if snapshot_dir != file_dir:
-                    raise IdeasError(
-                        "Snapshots found in multiple directories, cannot determine which one to use. Place snapshot to use in one directory and remove others."
-                    )
-            else:
-                snapshot_dir = file_dir
-        _validate_one_snapshot(snapshot_dir)
-
-        if snapshot_dir is None:
-            raise IdeasError("Failed to find any snapshots in zipped model.")
-
-        # detect
+    # detect
+    if engine is None:
         engine = (
             "pytorch"
             if "pytorch_config.yaml" in os.listdir(snapshot_dir)
             else "tensorflow"
         )
-        logger.info(f"Contents of snapshot_dir: {os.listdir(snapshot_dir)}")
         logger.info(f"Detected engine {engine}")
 
-        logger.info(
-            f"Found snapshot dir: {snapshot_dir}. Verifying {POSE_CFG_FILE} exists in this dir too."
+    logger.info(
+        f"Found snapshot dir: {snapshot_dir}. Verifying {POSE_CFG_FILE} exists in this dir too."
+    )
+    # assert that there is a pose_cfg.yaml file in the same dir
+    # if not, then raise an error
+    # otherwise create a new project and organize the dir
+    pose_cfg_file = os.path.join(snapshot_dir, POSE_CFG_FILE)
+    if not os.path.exists(pose_cfg_file):
+        raise IdeasError(
+            f"No {POSE_CFG_FILE} found in snapshot directory '{snapshot_dir}'"
         )
-        # assert that there is a pose_cfg.yaml file in the same dir
-        # if not, then raise an error
-        # otherwise create a new project and organize the dir
-        pose_cfg_file = os.path.join(snapshot_dir, POSE_CFG_FILE)
-        if not os.path.exists(pose_cfg_file):
+
+    if engine == "pytorch":
+        logger.info(f"Verifying {PYTORCH_CFG_FILE} exists in this dir too.")
+        pytorch_cfg_file = os.path.join(snapshot_dir, PYTORCH_CFG_FILE)
+        if not os.path.exists(pytorch_cfg_file):
             raise IdeasError(
-                f"No {POSE_CFG_FILE} found in snapshot dirctory '{snapshot_dir}'"
+                f"No {PYTORCH_CFG_FILE} found in snapshot dirctory '{snapshot_dir}'"
             )
 
-        if engine == "pytorch":
-            logger.info(
-                f"Verifying {PYTORCH_CFG_FILE} exists in this dir too."
-            )
-            pytorch_cfg_file = os.path.join(snapshot_dir, PYTORCH_CFG_FILE)
-            if not os.path.exists(pytorch_cfg_file):
-                raise IdeasError(
-                    f"No {PYTORCH_CFG_FILE} found in snapshot dirctory '{snapshot_dir}'"
+    pose_cfg = dlc.auxiliaryfunctions.read_plainconfig(pose_cfg_file)
+    pose_cfg["dataset_type"] = "imgaug"
+
+    # create new project folder
+    logger.info("Creating new project to place model in")
+    config_file = dlc.create_new_project(
+        project="Project",
+        experimenter="IDEAS",
+        # dlc requires list of videos when creating a new project,
+        # but they're not used at all after labeled data is generated.
+        # just provide any mp4 movies in data dir.
+        videos=[
+            "/ideas/data/2023-01-27-10-34-22-camera-1_trimmed_1s_dlc_labeled_movie.mp4"
+        ],
+        working_directory=model_dir if output_dir is None else output_dir,
+        copy_videos=False,
+    )
+
+    # Create test and train dirs
+    config = dlc.auxiliaryfunctions.read_config(config_file)
+
+    if config_exists:
+        logger.info("Copying input config to new project")
+        shutil.copy(actual_config_file, config_file)
+        update_config_file(
+            config_file=config_file,
+            updates={"project_path": config["project_path"]},
+        )
+    else:
+        # update config file based on pose cfg
+        logger.info("Updating config file based on pose cfg")
+        update_config_file(
+            config_file=config_file,
+            updates={
+                "default_net_type": pose_cfg["net_type"],
+                "default_augmenter": pose_cfg["dataset_type"],
+                "bodyparts": pose_cfg["all_joints_names"],
+                "dotsize": 6,
+                "engine": engine,
+            },
+        )
+
+    # Create test and train dirs
+    config = dlc.auxiliaryfunctions.read_config(config_file)
+    train_dir = Path(
+        os.path.join(
+            config["project_path"],
+            str(
+                dlc.auxiliaryfunctions.get_model_folder(
+                    trainFraction=config["TrainingFraction"][0],
+                    shuffle=1,
+                    cfg=config,
+                    engine=(
+                        Engine.PYTORCH if engine == "pytorch" else Engine.TF
+                    ),
                 )
-
-        pose_cfg = dlc.auxiliaryfunctions.read_plainconfig(pose_cfg_file)
-        pose_cfg["dataset_type"] = "imgaug"
-
-        # create new project folder
-        logger.info("Creating new project to place model in")
-        config_file = dlc.create_new_project(
-            project="Project",
-            experimenter="IDEAS",
-            videos=movie_files,
-            working_directory=model_dir if output_dir is None else output_dir,
-            copy_videos=False,
+            ),
+            "train",
         )
-
-        # Create test and train dirs
-        config = dlc.auxiliaryfunctions.read_config(config_file)
-
-        if exists:
-            logger.info("Copying input config to new project")
-            shutil.copy(actual_config_file, config_file)
-            update_config_file(
-                config_file=config_file,
-                updates={"project_path": config["project_path"]},
-            )
-        else:
-            # update config file based on pose cfg
-            logger.info("Updating config file based on pose cfg")
-            update_config_file(
-                config_file=config_file,
-                updates={
-                    "default_net_type": pose_cfg["net_type"],
-                    "default_augmenter": pose_cfg["dataset_type"],
-                    "bodyparts": pose_cfg["all_joints_names"],
-                    "dotsize": 6,
-                    "engine": engine,
-                },
-            )
-
-        # Create test and train dirs
-        config = dlc.auxiliaryfunctions.read_config(config_file)
-        train_dir = Path(
-            os.path.join(
-                config["project_path"],
-                str(
-                    dlc.auxiliaryfunctions.get_model_folder(
-                        trainFraction=config["TrainingFraction"][0],
-                        shuffle=1,
-                        cfg=config,
-                        engine=(
-                            Engine.PYTORCH
-                            if engine == "pytorch"
-                            else Engine.TF
-                        ),
-                    )
-                ),
-                "train",
-            )
+    )
+    test_dir = Path(
+        os.path.join(
+            config["project_path"],
+            str(
+                dlc.auxiliaryfunctions.get_model_folder(
+                    trainFraction=config["TrainingFraction"][0],
+                    shuffle=1,
+                    cfg=config,
+                    engine=(
+                        Engine.PYTORCH if engine == "pytorch" else Engine.TF
+                    ),
+                )
+            ),
+            "test",
         )
-        test_dir = Path(
-            os.path.join(
-                config["project_path"],
-                str(
-                    dlc.auxiliaryfunctions.get_model_folder(
-                        trainFraction=config["TrainingFraction"][0],
-                        shuffle=1,
-                        cfg=config,
-                        engine=(
-                            Engine.PYTORCH
-                            if engine == "pytorch"
-                            else Engine.TF
-                        ),
-                    )
-                ),
-                "test",
-            )
+    )
+
+    logger.info("Creating train and test model directories")
+    train_dir.mkdir(parents=True, exist_ok=True)
+    test_dir.mkdir(parents=True, exist_ok=True)
+
+    modelfoldername = dlc.auxiliaryfunctions.get_model_folder(
+        trainFraction=config["TrainingFraction"][0],
+        shuffle=1,
+        cfg=config,
+        engine=Engine.PYTORCH if engine == "pytorch" else Engine.TF,
+    )
+    path_train_config = str(
+        os.path.join(
+            config["project_path"],
+            Path(modelfoldername),
+            "train",
+            "pose_cfg.yaml",
         )
-
-        logger.info("Creating train and test model directories")
-        train_dir.mkdir(parents=True, exist_ok=True)
-        test_dir.mkdir(parents=True, exist_ok=True)
-
-        modelfoldername = dlc.auxiliaryfunctions.get_model_folder(
-            trainFraction=config["TrainingFraction"][0],
-            shuffle=1,
-            cfg=config,
-            engine=Engine.PYTORCH if engine == "pytorch" else Engine.TF,
+    )
+    path_test_config = str(
+        os.path.join(
+            config["project_path"],
+            Path(modelfoldername),
+            "test",
+            "pose_cfg.yaml",
         )
-        path_train_config = str(
-            os.path.join(
-                config["project_path"],
-                Path(modelfoldername),
-                "train",
-                "pose_cfg.yaml",
-            )
+    )
+    path_pytorch_config = str(
+        os.path.join(
+            config["project_path"],
+            Path(modelfoldername),
+            "train",
+            "pytorch_config.yaml",
         )
-        path_test_config = str(
-            os.path.join(
-                config["project_path"],
-                Path(modelfoldername),
-                "test",
-                "pose_cfg.yaml",
-            )
-        )
-        path_pytorch_config = str(
-            os.path.join(
-                config["project_path"],
-                Path(modelfoldername),
-                "train",
-                "pytorch_config.yaml",
-            )
-        )
+    )
 
-        # move snapshot files to new model dir
-        for filename in glob(f"{snapshot_dir}/snapshot*"):
-            _, basename = os.path.split(filename)
-            new_filename = os.path.join(train_dir, basename)
-            logger.info(
-                f"Copying snapshot file '{filename}' to '{new_filename}'"
-            )
-            shutil.copy(filename, new_filename)
+    # move snapshot files to new model dir
+    for filename in glob(f"{snapshot_dir}/snapshot*"):
+        _, basename = os.path.split(filename)
+        new_filename = os.path.join(train_dir, basename)
+        logger.info(f"Copying snapshot file '{filename}' to '{new_filename}'")
+        shutil.copy(filename, new_filename)
 
-        # move pose_cfg.yaml to new model dir
-        shutil.copy(pose_cfg_file, path_train_config)
+    # move pose_cfg.yaml to new model dir
+    logger.info("Copying train pose_cfg.yaml file to new model dir")
+    shutil.copy(pose_cfg_file, path_train_config)
 
-        if engine == "pytorch":
-            shutil.copy(pytorch_cfg_file, path_pytorch_config)
+    if engine == "pytorch":
+        logger.info("Copying train pytorch_config.yaml file to new model dir")
+        shutil.copy(pytorch_cfg_file, path_pytorch_config)
 
-        # make some final updates to pose_cfg.yaml in test and train dirs
-        dict2change = {
-            "project_path": str(config["project_path"]),
-        }
+    # make some final updates to pose_cfg.yaml in test and train dirs
+    logger.info("Updating project patch in train pose_cfg.yaml file")
+    dict2change = {
+        "project_path": str(config["project_path"]),
+    }
+    _update_train_pose_cfg(pose_cfg, dict2change, path_train_config)
 
-        _update_train_pose_cfg(pose_cfg, dict2change, path_train_config)
-        keys2save = [
-            "dataset",
-            "dataset_type",
-            "num_joints",
-            "all_joints",
-            "all_joints_names",
-            "net_type",
-            "init_weights",
-            "global_scale",
-            "location_refinement",
-            "locref_stdev",
-        ]
-        _create_test_pose_cfg(pose_cfg, keys2save, path_test_config)
+    logger.info(
+        "Initializing test pose_cfg.yaml file from train pose_cfg.yaml"
+    )
+    keys2save = [
+        "dataset",
+        "dataset_type",
+        "num_joints",
+        "all_joints",
+        "all_joints_names",
+        "net_type",
+        "init_weights",
+        "global_scale",
+        "location_refinement",
+        "locref_stdev",
+    ]
+    _create_test_pose_cfg(pose_cfg, keys2save, path_test_config)
 
-        return config["project_path"], True, engine
+    return config["project_path"], engine
 
 
 def _extract_pretrained_model_dir(
@@ -443,13 +405,13 @@ def _extract_pretrained_model_dir(
     logger.info("Contents of unzipped model dir:")
     logger.info(os.listdir(f"{model_dir}"))
 
-    model_dir, is_new_project, engine = _validate_or_transform_model_dir(
-        model_dir=model_dir, movie_files=movie_files
+    model_dir, engine = _validate_or_transform_model_dir(
+        model_dir=model_dir, movie_files=movie_files, output_dir=output_dir
     )
     logger.info(f"Transformed model dir: {model_dir}")
     logger.info(os.listdir(f"{model_dir}"))
 
-    return model_dir, is_new_project, engine
+    return model_dir, engine
 
 
 def _create_training_dataset_metadata(
@@ -505,7 +467,6 @@ def _write_output_metadata_workflow(
     model_dir: str,
     output_movie_files: List[str],
     output_pose_estimate_files: List[str],
-    is_new_project: bool,
 ):
     """Helper function for writing output metadata for the workflow tool.
 
@@ -516,8 +477,8 @@ def _write_output_metadata_workflow(
 
     :param model_dir: The model directory. Output metadata about the metadata
         will be extracted from the config file.
-    :param output_movie_files: The output movie file to extract timing and spacing
-        metadata from.
+    :param output_movie_files: The output movie file to extract timing and
+        spacing metadata from.
     """
     logger.info("Getting config file")
     config_file = os.path.join(model_dir, MODEL_CONFIG_FILE)
@@ -531,9 +492,9 @@ def _write_output_metadata_workflow(
     output_metadata = {ANNOTATIONS_OUTPUT_FILE: {}}
     for file in output_movie_files:
         basename, _ = os.path.splitext(os.path.basename(file))
-        output_metadata[
-            basename
-        ] = get_timing_spacing_metadata_from_labeled_movie(file)
+        output_metadata[basename] = (
+            get_timing_spacing_metadata_from_labeled_movie(file)
+        )
         keys.append(basename)
 
     for file in output_pose_estimate_files:
@@ -548,12 +509,12 @@ def _write_output_metadata_workflow(
         output_metadata[key][DLC_METADATA_KEY]["scorer"] = config["scorer"]
         output_metadata[key][DLC_METADATA_KEY]["date"] = config["date"]
 
-        output_metadata[key][DLC_METADATA_KEY][
-            "multi_animal_project"
-        ] = config["multianimalproject"]
-        output_metadata[key][DLC_METADATA_KEY][
-            "model_neural_net_type"
-        ] = config["default_net_type"]
+        output_metadata[key][DLC_METADATA_KEY]["multi_animal_project"] = (
+            config["multianimalproject"]
+        )
+        output_metadata[key][DLC_METADATA_KEY]["model_neural_net_type"] = (
+            config["default_net_type"]
+        )
         output_metadata[key][DLC_METADATA_KEY]["body_parts"] = ",".join(
             config[
                 (
@@ -563,11 +524,11 @@ def _write_output_metadata_workflow(
                 )
             ]
         )
-        output_metadata[key][DLC_METADATA_KEY][
-            "snapshot"
-        ] = _get_snapshot_nums(model_dir, recursive=True)[
-            config["snapshotindex"]
-        ]
+        output_metadata[key][DLC_METADATA_KEY]["snapshot"] = (
+            _get_snapshot_nums(model_dir, recursive=True)[
+                config["snapshotindex"]
+            ]
+        )
 
     with open(OUTPUT_METDATA_FILE, "w") as f:
         json.dump(output_metadata, f, indent=4)
@@ -603,8 +564,8 @@ def run_workflow(
     :param str output_dir: Path to the output directory.
     :param List[str] movie_files: Behavioural movies to analyze.
         Must be one of the following formats: .isxb, .mp4, and .avi.
-    :param str experiment_annotations_format: The file format of the output experiment annotations file.
-        Can be either .parquet or .csv
+    :param str experiment_annotations_format: The file format of the output
+        experiment annotations file. Can be either .parquet or .csv
     :param dict crop_rect: ROI input representing the crop rect area.
         The crop rect is represented as:
         [{
@@ -615,8 +576,8 @@ def run_workflow(
             "height": ....
         }]
         If empty, then no cropping is applied.
-    :param int window_length: Length of the median filter to apply on the model results.
-        Must be an odd number. If zero, then no filtering is applied.
+    :param int window_length: Length of the median filter, in samples, to apply on the model results.
+        Must be an odd number. If 1, then no filtering is applied.
     :param str displayed_body_parts: Selects the body parts that are plotted in the video.
         If all, then all body parts from config.yaml are used.
     :param float p_cutoff: Cutoff threshold for predictions when labelling the
@@ -651,32 +612,39 @@ def run_workflow(
     model_dir = model_dir[0]
     tmp_model_dir = None
     if not os.path.isdir(model_dir):
-        # is_new_project = True
         model_dir_name = os.path.splitext(os.path.basename(model_dir))[0]
         tmp_model_dir = f"{output_dir}/{model_dir_name}"
-        model_dir, is_new_project, engine = _extract_pretrained_model_dir(
+        model_dir, engine = _extract_pretrained_model_dir(
             model_dir=model_dir, movie_files=movie_files, output_dir=output_dir
         )
     else:
-        is_new_project = False
-        model_dir, _, engine = _validate_or_transform_model_dir(
+        model_dir, engine = _validate_or_transform_model_dir(
             model_dir=model_dir, movie_files=movie_files, output_dir=output_dir
         )
 
     if experiment_annotations_format not in EXPERIMENT_ANNOTATIONS_FORMATS:
         raise IdeasError(
-            f"Experiment annotations format ({experiment_annotations_format}) must be either {EXPERIMENT_ANNOTATIONS_FORMATS}."
+            f"Experiment annotations format ({experiment_annotations_format})"
+            f" must be either {EXPERIMENT_ANNOTATIONS_FORMATS}."
         )
 
     config_file = os.path.join(model_dir, MODEL_CONFIG_FILE)
     if not os.path.exists(config_file):
         raise IdeasError(
-            f"Model config file ({config_file}) does not exist",
+            f"Model config file ({config_file}) does not exist.",
         )
 
     with open(config_file, "r") as f:
         config = yaml.safe_load(f)
         project_path = config["project_path"]
+
+    # ensure window_length is odd, as scipy.signal.medfilt errors
+    # when the then called kernel_size is even
+    if window_length % 2 == 0:
+        raise IdeasError(
+            f"`window_length` must be odd, but {window_length} was provided "
+            "as input."
+        )
 
     try:
         if displayed_body_parts != "all":
@@ -689,18 +657,21 @@ def run_workflow(
                 ]
             ):
                 raise IdeasError(
-                    f"Displayed body parts contains an invalid body part name. Body parts of model are: {config['bodyparts']}"
+                    "Displayed body parts contains an invalid body part name."
+                    f" Body parts of model are: {config['bodyparts']}."
                 )
     except Exception as error:
         raise IdeasError(
-            f"Failed to parse displayed body parts ({displayed_body_parts}). Expected format is the value 'all' or a comma-seperated list of body parts tracked by the model."
+            f"Failed to parse displayed body parts ({displayed_body_parts}). "
+            "Expected format is the value 'all' or a comma-seperated list of "
+            "body parts tracked by the model."
         ) from error
 
     if color_map not in matplotlib.colormaps():
         raise IdeasError(
             (
                 f"Color map ({color_map}) must be one of the following "
-                f"matplotlib color maps: {matplotlib.colormaps()}"
+                f"matplotlib color maps: {matplotlib.colormaps()}."
             ),
         )
 
@@ -776,21 +747,27 @@ def run_workflow(
                 pose_estimates_output_files.append(output_file)
 
                 for preview in PREVIEWS:
+                    if preview == "trajectory":
+                        # save the trajectory preview as a rasterized figure
+                        # (PNG), otherwise vectorial (SVG) is too big and lead
+                        # to webpage freezing upon attempting to visualize it
+                        # on IDEAS
+                        ext = PREVIEW_EXT_TRAJECTORY
+                    else:
+                        ext = PREVIEW_EXT
                     preview_file = os.path.join(
                         output_dir,
                         PREVIEW_DIR,
                         basename,
-                        f"{preview}{'_filtered' if is_filtered else ''}.{PREVIEW_EXT}",
+                        f"{preview}{'_filtered' if is_filtered else ''}.{ext}",
                     )
                     if os.path.exists(preview_file):
                         logger.info(
-                            f"Renaming {preview_file} to {preview}.{i}.{PREVIEW_EXT}"
+                            f"Renaming {preview_file} to {preview}.{i}.{ext}"
                         )
                         os.rename(
                             preview_file,
-                            os.path.join(
-                                output_dir, f"{preview}.{i}.{PREVIEW_EXT}"
-                            ),
+                            os.path.join(output_dir, f"{preview}.{i}.{ext}"),
                         )
 
     experiment_annotations_file_path = f"{output_dir}/{ANNOTATIONS_OUTPUT_FILE}.{experiment_annotations_format}"
@@ -804,8 +781,9 @@ def run_workflow(
             annotations_file=experiment_annotations_file_path,
         )
     except Exception as error:
-        logger.warn(
-            f"Failed to convert DeepLabCut h5 output to experiment annotations object with error: {error}"
+        logger.warning(
+            "Failed to convert DeepLabCut h5 output to experiment annotations"
+            f" object with error: {error}."
         )
 
     logger.info("Renaming mp4 outputs")
@@ -831,10 +809,11 @@ def run_workflow(
             model_dir,
             labeled_mp4_output_files,
             pose_estimates_output_files,
-            is_new_project,
         )
     except Exception as error:
-        logger.warn(f"Failed to generate output metadata with error: {error}")
+        logger.warning(
+            f"Failed to generate output metadata with error: {error}."
+        )
 
     if tmp_model_dir:
         logger.info("Removing temporary model dir")
@@ -967,15 +946,24 @@ def analyze(
             "Plotting trajectories from non-filtered data using DeepLabCut"
         )
         try:
-            dlc.utils.plotting.plot_trajectories(
-                config=config_file,
-                videos=movie_files,
-                destfolder=output_dir,
-                filtered=False,
-                showfigures=True,
-            )
+            # create both SVG and PNG versions of DLC plots, as we want the
+            # trajectory preview as a rasterized PNG file and the other
+            # previews as SVG files, yet `imagetype` can only be a string,
+            # not a list of extensions for as many videos; therefore, we need
+            # to create 2 full sets of preview figures in both PNG and SVG
+            # format, and then pick the format we want for each produced
+            # figure by moving the wanted file into the output directory
+            for ext in [PREVIEW_EXT, PREVIEW_EXT_TRAJECTORY]:
+                dlc.utils.plotting.plot_trajectories(
+                    config=config_file,
+                    videos=movie_files,
+                    destfolder=output_dir,
+                    filtered=False,
+                    showfigures=True,
+                    imagetype=f".{ext}",
+                )
         except Exception as error:
-            logger.warn(
+            logger.warning(
                 f"Failed to plot trajectories from non-filtered data using DeepLabCut with error: {error}"
             )
 
@@ -1066,15 +1054,18 @@ def filter(
                 "Plotting trajectories from filtered data using DeepLabCut"
             )
             try:
-                dlc.utils.plotting.plot_trajectories(
-                    config=config_file,
-                    videos=movie_files,
-                    destfolder=output_dir,
-                    filtered=True,
-                    showfigures=True,
-                )
+                # create both svg and png versions of DLC plots
+                for ext in [PREVIEW_EXT, PREVIEW_EXT_TRAJECTORY]:
+                    dlc.utils.plotting.plot_trajectories(
+                        config=config_file,
+                        videos=movie_files,
+                        destfolder=output_dir,
+                        filtered=True,
+                        showfigures=True,
+                        imagetype=f".{ext}",
+                    )
             except Exception as error:
-                logger.warn(
+                logger.warning(
                     f"Failed to plot trajectories from filtered data using DeepLabCut with error: {error}"
                 )
     else:
@@ -1221,4 +1212,6 @@ def label(
             )
         )
     except Exception as error:
-        raise IdeasError("Failed to label DeepLabCut pose estimates")
+        raise IdeasError(
+            f"Failed to label DeepLabCut pose estimates: {error}."
+        )

@@ -1,10 +1,11 @@
 FROM nvidia/cuda:11.2.2-devel-ubuntu20.04 AS base
 
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONFAULTHANDLER=1
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONFAULTHANDLER 1
 ENV DEBIAN_FRONTEND=noninteractive
+
 # disable console output of tqdm since it can cause issues in the cloud
 ENV TQDM_DISABLE=1
 
@@ -13,14 +14,6 @@ ENV TQDM_DISABLE=1
 # live
 ENV PATH="${PATH}:/ideas/.local/bin"
 
-ARG PACKAGE_REQS
-
-ARG PYTHON_VERSION=3.10.0
-ARG PYTHON=python3.10
-
-ARG OPENCV_VERSION=4.6.0
-
-ENV PACKAGE_REQS=$PACKAGE_REQS
 
 # Create ideas user
 RUN addgroup ideas \
@@ -32,8 +25,11 @@ RUN apt update && apt upgrade -y \
     && apt install -y software-properties-common \
     && apt install -y gcc python3-dev \
     && apt install -y libgl1-mesa-glx libglib2.0-0 \
-    && apt install -y ffmpeg liblzma-dev
+    && apt install -y ffmpeg liblzma-dev \
+    && apt install -y build-essential libtool autoconf unzip wget libssl-dev
 
+ARG PYTHON_VERSION=3.10.0
+ARG PYTHON=python3.10
 # BE needs at least python3.9, but system python on ubuntu 20.04 is python3.8
 # build python3.10 from source, instead of installing through apt because
 # we need to build opencv from source to get h264 support (not available on opencv-python pip package),
@@ -49,7 +45,7 @@ RUN apt install -y build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss
 
 RUN apt install -y git python3-pip \
     && ${PYTHON} -m pip install --upgrade pip \
-    && ${PYTHON} -m pip install --no-cache-dir awscli boto3 click requests    
+    && ${PYTHON} -m pip install --no-cache-dir awscli==1.35.17 boto3==1.35.17 click requests
 
 # link python to the version of python BE needs
 RUN ln -s $(which ${PYTHON}) /usr/bin/python
@@ -58,24 +54,37 @@ RUN ln -s $(which ${PYTHON}) /usr/bin/python
 COPY setup.py function_caller.py user_deps.txt ./
 
 # install dependencies
-RUN ${PYTHON} -m pip install --default-timeout=1000 -e .
+RUN --mount=type=secret,id=ideas_github_token \
+    ${PYTHON} -m pip install --upgrade pip setuptools==60.0.0 setuptools-scm==7.1.0 wheel && \
+    IDEAS_GITHUB_TOKEN=$(cat /run/secrets/ideas_github_token) \
+    ${PYTHON} -m pip install --default-timeout=1000 -e .
 
 # for training, dlc is for some reason writing to files here
 RUN chown -R ideas:ideas /usr/local/lib/${PYTHON}/site-packages/deeplabcut
 
-ARG OPENCV_VERSION=4.6.0
 # build opencv from source in order to have access to h264 encoder, which
 # is not available in the opencv-python pip package due to licensing restrictions
 # h264 encoder is required in order for movies to be playble in the browser.
 RUN ${PYTHON} -m pip uninstall -y opencv-python \
-    && apt-get install -y build-essential cmake pkg-config unzip yasm git checkinstall wget \
+    && apt-get install -y build-essential pkg-config unzip yasm git checkinstall wget \
     libjpeg-dev libpng-dev libtiff-dev \
     libavcodec-dev libavformat-dev libswscale-dev libavresample-dev \
     libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev \
     libxvidcore-dev x264 libx264-dev libfaac-dev libmp3lame-dev libtheora-dev  \
     libfaac-dev libmp3lame-dev libvorbis-dev \
-    libatlas-base-dev gfortran \
-    && cd /tmp \
+    libatlas-base-dev gfortran
+
+# Install cmake < 4 in order to build opencv 4.6
+ARG CMAKE_VERSION=3.5.1
+RUN cd /tmp \
+    && wget https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.tar.gz \
+    && tar -xzf cmake-${CMAKE_VERSION}.tar.gz \
+    && cd cmake-${CMAKE_VERSION} \
+    && ./bootstrap && make && make install \
+    && cd /tmp && rm -rf cmake-${CMAKE_VERSION}*
+
+ARG OPENCV_VERSION=4.6.0
+RUN cd /tmp \
     && wget -O opencv.zip https://github.com/opencv/opencv/archive/refs/tags/${OPENCV_VERSION}.zip \
     && wget -O opencv_contrib.zip https://github.com/opencv/opencv_contrib/archive/refs/tags/${OPENCV_VERSION}.zip \
     && unzip opencv.zip \
@@ -124,12 +133,14 @@ COPY --chown=ideas resources/models /ideas/models
     
 COPY --chown=ideas toolbox /ideas/toolbox
 
-# Copy tool commands to image after installing the code
-# so that the image is not rebuilt if a command is updated.
+# this is after installing the code because we don't want to
+# reinstall everything if we update a command
 COPY --chown=ideas commands /ideas/commands
 
-# Marks commands as executable.
-# Return 0 always in the case there are no tool commands.
+# Mark commands as executable
+# the reason we always return 0 is because we want this to succeed
+# even if there are no commands in /ideas/commands/
+# (which can happen in initial stages of tool dev)
 RUN chmod +x /ideas/commands/* ; return 0
 
 # copy JSON files in info
@@ -144,3 +155,6 @@ COPY --chown=ideas data/2023-01-27-10-34-22-camera-1_trimmed_1s_dlc_labeled_movi
 
 USER ideas
 CMD ["/bin/bash"]
+
+FROM base AS jupyter
+RUN ${PYTHON} -m pip install jupyter

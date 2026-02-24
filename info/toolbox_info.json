@@ -23,7 +23,7 @@
             "name": "Inscopix Bottom View Mouse Pose Estimation",
             "key": "dlc_workflow",
             "help": "Track 8 body parts of a single mouse with a deeplabcut model",
-            "version": "2.1.2",
+            "version": "2.4.2",
             "maturity": "production",
             "visibility": "public",
             "toolkit": "Behavior Processing",
@@ -136,7 +136,7 @@
                     "name": "Window Length",
                     "required": true,
                     "hidden": false,
-                    "help": "Length of the median filter applied on the predictions. Must be an odd number. If zero, then no filtering is applied.",
+                    "help": "Length of the median filter, in samples, applied on the predictions. Must be an odd number. If 1, then no filtering is applied.",
                     "type": {
                         "is_source": false,
                         "param_type": "ToolIntRangeParam",
@@ -145,8 +145,8 @@
                             "group": "Filter",
                             "group_order": 0
                         },
-                        "min": 0,
-                        "max": 100
+                        "min": 1,
+                        "max": 101
                     },
                     "default": 5
                 },
@@ -297,7 +297,7 @@
             "results": [
                 {
                     "group_key": "inscopix_bottom_up_model__run",
-                    "group_name": "Inscopix Bottom Up Model  Run",
+                    "group_name": "Outputs",
                     "group_type": "tool_output",
                     "required": true,
                     "multiple": false,
@@ -344,7 +344,7 @@
             "name": "DeepLabCut Pose Estimation",
             "key": "workflow__run_workflow",
             "help": "Track animal body parts with a user-uploaded, pre-trained model",
-            "version": "1.0.2",
+            "version": "1.2.2",
             "maturity": "production",
             "visibility": "public",
             "toolkit": "Behavior Processing",
@@ -368,7 +368,7 @@
                         "param_type": "ToolPathParam",
                         "param_datatype": "string",
                         "display": {
-                            "group": "Input Files",
+                            "group": "Inputs",
                             "group_order": 0
                         },
                         "is_dir": false,
@@ -378,7 +378,7 @@
                         ],
                         "file_filters": [
                             {
-                                "file_type": "dlc_labeled_data",
+                                "file_type": "dlc_model",
                                 "file_structure": "archive",
                                 "file_format": "zip"
                             }
@@ -646,7 +646,7 @@
             "results": [
                 {
                     "group_key": "workflow__run_workflow",
-                    "group_name": "Workflow  Run Workflow",
+                    "group_name": "Outputs",
                     "group_type": "tool_output",
                     "required": true,
                     "multiple": false,
@@ -693,7 +693,7 @@
             "name": "Train DeepLabCut Model",
             "key": "training__train_model",
             "help": "Train a deep learning model for pose estimation using DeepLabCut",
-            "version": "1.0.3",
+            "version": "1.2.1",
             "maturity": "production",
             "visibility": "public",
             "toolkit": "Behavior Processing",
@@ -1110,7 +1110,7 @@
                     "name": "Batch Size",
                     "required": false,
                     "hidden": false,
-                    "help": "(pytorch only) The batch size to train with. Overrides the value set in pytorch_config.yaml. Small batch sizes (i.e., value of one) is good for training on a CPU, but this tool runs on a GPU instance. For GPUs a larger batch size should be used. The value should be the biggest power of 2 where you don't geta CUDA out-of-memory error, such as 8, 16, 32 or 64. This also allows you to increase the learning rate (empirically you can scale the learning rate by sqrt(batch_size) times). By default a batch size of 4 is used as this has shown to stay within memory limits on the instance used for this tool.",
+                    "help": "(pytorch only) The batch size to train with. Overrides the value set in pytorch_config.yaml. Small batch sizes (i.e., value of one) is good for training on a CPU, but this tool runs on a GPU instance. For GPUs a larger batch size should be used. The value should be the biggest power of 2 where you don't geta CUDA out-of-memory error, such as 8, 16, 32 or 64. This also allows you to increase the learning rate (empirically you can scale the learning rate by sqrt(batch_size) times). By default a batch size of 2 is used as this has shown to stay within memory limits on the instance used for this tool.",
                     "type": {
                         "is_source": false,
                         "param_type": "ToolChoiceParam",
@@ -1138,7 +1138,7 @@
                             "64"
                         ]
                     },
-                    "default": "4"
+                    "default": "2"
                 },
                 {
                     "key": "epochs",
@@ -1409,7 +1409,7 @@
             "results": [
                 {
                     "group_key": "training__train_model",
-                    "group_name": "Training  Train Model",
+                    "group_name": "Outputs",
                     "group_type": "tool_output",
                     "required": true,
                     "multiple": false,

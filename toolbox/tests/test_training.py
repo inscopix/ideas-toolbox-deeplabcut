@@ -159,20 +159,23 @@ def test_train_model(
             "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-results.csv",
             "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-snapshot-2000.h5",
             "LabeledImages_DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_snapshot-2000",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-keypoint-results.csv",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-snapshot-1000.h5",
+            "LabeledImages_DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_snapshot-1000",
             "maps",
         ]
     )
 
     # verify previews
     preview_files = [
-        "evaluation_results_preview.png",
-        "evaluation_results_error_distribution_preview.png",
-        "evaluation_results_error_distribution_pcutoff_preview.png",
+        "evaluation_results_preview.svg",
+        "evaluation_results_error_distribution_preview.svg",
+        "evaluation_results_error_distribution_pcutoff_preview.svg",
         "evaluation_results_plots_train_movie_preview.mp4",
         "evaluation_results_plots_test_movie_preview.mp4",
         "evaluation_results_maps_locref_movie_preview.mp4",
         "evaluation_results_maps_scmap_movie_preview.mp4",
-        "learning_stats_preview.png",
+        "learning_stats_preview.svg",
     ]
 
     for f in preview_files:
