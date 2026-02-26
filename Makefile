@@ -1,32 +1,17 @@
-# toolbox variables
-REPO=inscopix
-PROJECT=ideas
-MODULE=toolbox
-IMAGE_NAME=dlc
-VERSION=$(shell git describe --tags --always --dirty)
-IMAGE_TAG=${REPO}/${PROJECT}/${MODULE}/${IMAGE_NAME}:${VERSION}
-FULL_NAME=${REPO}/${PROJECT}/${MODULE}/${IMAGE_NAME}
-CONTAINER_NAME=${REPO}-${PROJECT}-${MODULE}-${IMAGE_NAME}-${VERSION}
+.PHONY:  clean clean-venv venv set-hooks setup build test ruff ruff-check run run-all
+
+IMAGE_REPO=platform
+IMAGE_NAME=deeplabcut
+LABEL=$(shell cat .ideas/images_spec.json | jq -r ".[0].label")
+IMAGE_TAG=${IMAGE_REPO}/${IMAGE_NAME}:${LABEL}
+LATEST_IMAGE_TAG=${IMAGE_REPO}/${IMAGE_NAME}:latest
 PLATFORM=linux/amd64
-PYTHON=python3.10
-
-# This flag determines whether files should be
-# dynamically renamed (if possible) after function
-# execution.
-# You want to leave this to true so that static
-# filenames are generated, so that these can be
-# annotated by the app.
-# If you want to see what happens on IDEAS, you can
-# switch this to false
-ifndef TC_NO_RENAME
-	TC_NO_RENAME="true"
+ifndef TARGET
+	TARGET=base
 endif
 
-# specify a different data dir to volume mount
-# when running the toolbox container for local testing
-ifndef DATA_DIR
-	DATA_DIR=$(PWD)/data
-endif
+# Update the tool specs whenever a new version of a container image is created
+TOOL_SPECS=${shell ls -d .ideas/*/tool_spec.json}
 
 
 # vars for gpu functionality
@@ -54,57 +39,40 @@ else
 	RUNTIME=
 endif
 
-define run_command
-    bash -c 'mkdir -p "/ideas/outputs/$1" \
-        && cd "/ideas/outputs/$1" \
-        && cp "/ideas/inputs/$1.json" "/ideas/outputs/$1/inputs.json" \
-        && "/ideas/commands/$1.sh" \
-	    && rm "/ideas/outputs/$1/inputs.json"'
-endef
-
 .DEFAULT_GOAL := build
 
 clean:
 	@echo "Cleaning up"
-	-docker rm $(CONTAINER_NAME)
-	-docker images | grep $(FULL_NAME) | awk '{print $$1 ":" $$2}' | grep -v $(VERSION) | xargs docker rmi
-	-rm -rf $(PWD)/outputs
+	-docker rmi ${IMAGE_TAG}
+	-docker rmi ${IMAGE_TAG}-test
 
+# Builds docker image
+# Installs necessary software dependencies for source code
 build:
-	@echo "Building docker image..."
-	DOCKER_BUILDKIT=1 docker build . -t $(IMAGE_TAG) \
+	docker build . -t $(LATEST_IMAGE_TAG) \
 		--platform ${PLATFORM} \
-		--target base
+		--target ${TARGET}
+	docker tag ${LATEST_IMAGE_TAG} ${IMAGE_TAG}
+	@$(foreach f, $(TOOL_SPECS), jq --indent 4 '.container_image.label = "${LABEL}"' $(f) > tmp.json && mv tmp.json ${f};)\
 
-test: build clean
-	@echo "Running toolbox tests..."
-	-mkdir -p $(PWD)/outputs
+# Runs unit tests in docker image
+# Used in automated pr checks on github
+test: TARGET=test
+test: IMAGE_TAG=${IMAGE_REPO}/${IMAGE_NAME}:${LABEL}-test
+test: LATEST_IMAGE_TAG=${IMAGE_REPO}/${IMAGE_NAME}:latest-test
+test: build
+	@echo "Running tests..."
 	docker run \
 		--platform ${PLATFORM} $(RUNTIME) \
-		-v $(PWD)/data:/ideas/data \
-		-v $(PWD)/inputs:/ideas/inputs \
-		-v $(PWD)/commands:/ideas/commands \
-		-w /ideas \
-		-e CODEBUILD_BUILD_ID=${CODEBUILD_BUILD_ID} \
 		-e USE_GPU=${USE_GPU} \
-		--name $(CONTAINER_NAME) \
+		--rm \
 		${IMAGE_TAG} \
-		$(PYTHON) -m pytest $(TEST_ARGS)
+		python -m pytest ${TEST_ARGS}
 
+# Run a tool in the repo
+# Specify the tool key to run
+run: build
+	ideas tools run $(tool) -s -c -n -g all
 
-run: build clean
-	@bash check_tool.sh $(TOOL)
-	@echo "Running the $(TOOL) tool in a Docker container. Outputs will be in /outputs/$(TOOL)"
-	docker run \
-			--platform ${PLATFORM} $(RUNTIME) \
-			-v ${DATA_DIR}:/ideas/data \
-			-v $(PWD)/inputs:/ideas/inputs \
-			-v $(PWD)/commands:/ideas/commands \
-			-e TC_NO_RENAME=$(TC_NO_RENAME) \
-			-e USE_GPU=${USE_GPU} \
-			-e GPU_TO_USE=${GPU_TO_USE} \
-			--name $(CONTAINER_NAME) \
-	    $(IMAGE_TAG) \
-		$(call run_command,$(TOOL)) \
-	&& docker cp $(CONTAINER_NAME):/ideas/outputs $(PWD) \
-	&& docker rm $(CONTAINER_NAME)
+run-all: build
+	@$(foreach f, $(shell ls -d .ideas/*/), ideas tools run -s -c -n -g all $(shell basename $(f));)

@@ -7,6 +7,7 @@
     "test_files": "sun02_2023-09-18-11-59-49_video-camera-1-ds",
     "max_iters": 2000,
     "save_iters": 1000,
+    "epochs": 10,
     "plot_evaluation_results": true,
     "per_keypoint_evaluation": true,
     "generate_maps": true

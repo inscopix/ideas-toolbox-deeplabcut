@@ -1,0 +1,13 @@
+{
+    "labeled_data_zip_file": ["data/training/labeled-data2.zip"],
+    "config_file": ["data/training/config.yaml"],
+    "train_pose_cfg_file": ["data/training/train_pose_cfg.yaml"],
+    "test_pose_cfg_file": ["data/training/test_pose_cfg.yaml"],
+    "train_files": "sun01_2023-09-18-10-28-29_video-camera-1-ds,sun03_2023-09-18-10-28-31_video-camera-1-ds",
+    "test_files": "sun02_2023-09-18-11-59-49_video-camera-1-ds",
+    "epochs": 5,
+    "save_epochs": 1,
+    "plot_evaluation_results": true,
+    "per_keypoint_evaluation": true,
+    "generate_maps": true
+}

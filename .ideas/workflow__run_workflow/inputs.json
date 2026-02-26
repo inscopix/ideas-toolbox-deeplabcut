@@ -1,0 +1,26 @@
+{
+    "model_dir": ["data/user_models/saviochan_Deeplabcut-OpenFieldArena-IDEAS-2024-04-01.zip"],
+    "movie_files": ["data/user_models/m3v1mp4_trimmed_1s.mp4"],
+    "experiment_annotations_format": "csv",
+    "crop_rect": [
+        {
+            "groupKey": "crop_rect",
+            "left": 10,
+            "top": 60,
+            "width": 610,
+            "height": 380,
+            "name": "Crop Rectangle",
+            "stroke": "#EB823B",
+            "type": "boundingBox"
+        }
+    ],
+    "window_length": 5,
+    "displayed_body_parts": "all",
+    "p_cutoff": 0.6,
+    "dot_size": 5,
+    "color_map": "rainbow",
+    "keypoints_only": false,
+    "output_frame_rate": 20,
+    "draw_skeleton": false,
+    "trail_points": 0
+}

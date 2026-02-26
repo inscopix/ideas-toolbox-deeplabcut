@@ -1,0 +1,157 @@
+{
+    "key": "workflow__run_workflow",
+    "name": "workflow__run_workflow",
+    "schema_version": "3.0.0",
+    "container_image": {
+        "repository": "platform/deeplabcut",
+        "label": "0.0.1"
+    },
+    "command": {
+        "file_path": "toolbox/tools/workflow.py",
+        "entry_point": "run_workflow_ideas_wrapper",
+        "program_type": "PYTHON"
+    },
+    "params": [
+        {
+            "key": "model_dir",
+            "name": "model_dir",
+            "required": false,
+            "description": "model_dir",
+            "type": {
+                "param_type": "ToolStringParam"
+            }
+        },
+        {
+            "key": "movie_files",
+            "name": "movie_files",
+            "required": false,
+            "description": "movie_files",
+            "type": {
+                "param_type": "ToolStringParam"
+            }
+        },
+        {
+            "key": "experiment_annotations_format",
+            "name": "experiment_annotations_format",
+            "required": false,
+            "description": "experiment_annotations_format",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "parquet"
+            }
+        },
+        {
+            "key": "crop_rect",
+            "name": "crop_rect",
+            "required": false,
+            "description": "crop_rect",
+            "type": {
+                "param_type": "ToolStringParam"
+            }
+        },
+        {
+            "key": "window_length",
+            "name": "window_length",
+            "required": false,
+            "description": "window_length",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 5
+            }
+        },
+        {
+            "key": "displayed_body_parts",
+            "name": "displayed_body_parts",
+            "required": false,
+            "description": "displayed_body_parts",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "all"
+            }
+        },
+        {
+            "key": "p_cutoff",
+            "name": "p_cutoff",
+            "required": false,
+            "description": "p_cutoff",
+            "type": {
+                "param_type": "ToolFloatRangeParam",
+                "default": 0.6
+            }
+        },
+        {
+            "key": "dot_size",
+            "name": "dot_size",
+            "required": false,
+            "description": "dot_size",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 5
+            }
+        },
+        {
+            "key": "color_map",
+            "name": "color_map",
+            "required": false,
+            "description": "color_map",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "rainbow"
+            }
+        },
+        {
+            "key": "keypoints_only",
+            "name": "keypoints_only",
+            "required": false,
+            "description": "keypoints_only",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            }
+        },
+        {
+            "key": "output_frame_rate",
+            "name": "output_frame_rate",
+            "required": false,
+            "description": "output_frame_rate",
+            "type": {
+                "param_type": "ToolIntRangeParam"
+            }
+        },
+        {
+            "key": "draw_skeleton",
+            "name": "draw_skeleton",
+            "required": false,
+            "description": "draw_skeleton",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            }
+        },
+        {
+            "key": "trail_points",
+            "name": "trail_points",
+            "required": false,
+            "description": "trail_points",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 0
+            }
+        }
+    ],
+    "results": [
+        {
+            "key": "tool_output_group",
+            "name": "Tool Outputs",
+            "description": "Tool outputs",
+            "file_patterns": [
+                "**/*"
+            ]
+        }
+    ],
+    "resources": {
+        "cpu": 1,
+        "gpu": 0,
+        "memory": 1000
+    }
+}

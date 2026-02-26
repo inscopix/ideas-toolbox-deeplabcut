@@ -1,0 +1,7 @@
+{
+    "container": "platform/deeplabcut:latest",
+    "executor_type": "PYTHON",
+    "file": "toolbox/tools/inscopix_bottom_up_model.py",
+    "function": "run_ideas_wrapper",
+    "schema_version": "1.0.0"
+}

@@ -1,0 +1,18 @@
+[
+  {
+    "schema_version": "0.0.1",
+    "repository": "platform/deeplabcut",
+    "label": "0.0.1",
+    "make_arguments": "build LABEL={label}",
+    "visibility": "public",
+    "readme_path": "container.md",
+    "description": "Inscopix container image for the DeepLabCut API",
+    "tags": [
+      "python",
+      "deeplabcut",
+      "deep-learning",
+      "pose-detection",
+      "behavior"
+    ]
+  }
+]

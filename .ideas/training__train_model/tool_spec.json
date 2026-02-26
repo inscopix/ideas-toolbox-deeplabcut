@@ -1,0 +1,345 @@
+{
+    "key": "training__train_model",
+    "name": "training__train_model",
+    "schema_version": "3.0.0",
+    "container_image": {
+        "repository": "platform/deeplabcut",
+        "label": "0.0.1"
+    },
+    "command": {
+        "file_path": "toolbox/tools/training.py",
+        "entry_point": "train_model_ideas_wrapper",
+        "program_type": "PYTHON"
+    },
+    "params": [
+        {
+            "key": "labeled_data_zip_file",
+            "name": "labeled_data_zip_file",
+            "required": false,
+            "description": "labeled_data_zip_file",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true
+            }
+        },
+        {
+            "key": "config_file",
+            "name": "config_file",
+            "required": false,
+            "description": "config_file",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true
+            }
+        },
+        {
+            "key": "engine",
+            "name": "engine",
+            "required": false,
+            "description": "engine",
+            "type": {
+                "param_type": "ToolStringParam"
+            }
+        },
+        {
+            "key": "training_fraction",
+            "name": "training_fraction",
+            "required": false,
+            "description": "training_fraction",
+            "type": {
+                "param_type": "ToolFloatRangeParam"
+            }
+        },
+        {
+            "key": "p_cutoff",
+            "name": "p_cutoff",
+            "required": false,
+            "description": "p_cutoff",
+            "type": {
+                "param_type": "ToolFloatRangeParam"
+            }
+        },
+        {
+            "key": "train_files",
+            "name": "train_files",
+            "required": false,
+            "description": "train_files",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "auto"
+            }
+        },
+        {
+            "key": "test_files",
+            "name": "test_files",
+            "required": false,
+            "description": "test_files",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "auto"
+            }
+        },
+        {
+            "key": "net_type",
+            "name": "net_type",
+            "required": false,
+            "description": "net_type",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "resnet_50"
+            }
+        },
+        {
+            "key": "augmenter_type",
+            "name": "augmenter_type",
+            "required": false,
+            "description": "augmenter_type",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "default"
+            }
+        },
+        {
+            "key": "train_pose_cfg_file",
+            "name": "train_pose_cfg_file",
+            "required": false,
+            "description": "train_pose_cfg_file",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true
+            }
+        },
+        {
+            "key": "pytorch_cfg_file",
+            "name": "pytorch_cfg_file",
+            "required": false,
+            "description": "pytorch_cfg_file",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true
+            }
+        },
+        {
+            "key": "num_snapshots_to_evaluate",
+            "name": "num_snapshots_to_evaluate",
+            "required": false,
+            "description": "num_snapshots_to_evaluate",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "all"
+            }
+        },
+        {
+            "key": "save_iters",
+            "name": "save_iters",
+            "required": false,
+            "description": "save_iters",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 50000
+            }
+        },
+        {
+            "key": "max_iters",
+            "name": "max_iters",
+            "required": false,
+            "description": "max_iters",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 1030000
+            }
+        },
+        {
+            "key": "allow_growth",
+            "name": "allow_growth",
+            "required": false,
+            "description": "allow_growth",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": true
+            }
+        },
+        {
+            "key": "keepdeconvweights",
+            "name": "keepdeconvweights",
+            "required": false,
+            "description": "keepdeconvweights",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": true
+            }
+        },
+        {
+            "key": "device",
+            "name": "device",
+            "required": false,
+            "description": "device",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "auto"
+            }
+        },
+        {
+            "key": "batch_size",
+            "name": "batch_size",
+            "required": false,
+            "description": "batch_size",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 4
+            }
+        },
+        {
+            "key": "epochs",
+            "name": "epochs",
+            "required": false,
+            "description": "epochs",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 200
+            }
+        },
+        {
+            "key": "save_epochs",
+            "name": "save_epochs",
+            "required": false,
+            "description": "save_epochs",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 50
+            }
+        },
+        {
+            "key": "detector_batch_size",
+            "name": "detector_batch_size",
+            "required": false,
+            "description": "detector_batch_size",
+            "type": {
+                "param_type": "ToolIntRangeParam"
+            }
+        },
+        {
+            "key": "detector_epochs",
+            "name": "detector_epochs",
+            "required": false,
+            "description": "detector_epochs",
+            "type": {
+                "param_type": "ToolIntRangeParam"
+            }
+        },
+        {
+            "key": "detector_save_epochs",
+            "name": "detector_save_epochs",
+            "required": false,
+            "description": "detector_save_epochs",
+            "type": {
+                "param_type": "ToolIntRangeParam"
+            }
+        },
+        {
+            "key": "pose_threshold",
+            "name": "pose_threshold",
+            "required": false,
+            "description": "pose_threshold",
+            "type": {
+                "param_type": "ToolFloatRangeParam",
+                "default": 0.1
+            }
+        },
+        {
+            "key": "test_pose_cfg_file",
+            "name": "test_pose_cfg_file",
+            "required": false,
+            "description": "test_pose_cfg_file",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true
+            }
+        },
+        {
+            "key": "plot_evaluation_results",
+            "name": "plot_evaluation_results",
+            "required": false,
+            "description": "plot_evaluation_results",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            }
+        },
+        {
+            "key": "body_parts_to_evaluate",
+            "name": "body_parts_to_evaluate",
+            "required": false,
+            "description": "body_parts_to_evaluate",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "all"
+            }
+        },
+        {
+            "key": "rescale",
+            "name": "rescale",
+            "required": false,
+            "description": "rescale",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            }
+        },
+        {
+            "key": "per_keypoint_evaluation",
+            "name": "per_keypoint_evaluation",
+            "required": false,
+            "description": "per_keypoint_evaluation",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            }
+        },
+        {
+            "key": "generate_maps",
+            "name": "generate_maps",
+            "required": false,
+            "description": "generate_maps",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            }
+        },
+        {
+            "key": "optimal_snapshot_metric",
+            "name": "optimal_snapshot_metric",
+            "required": false,
+            "description": "optimal_snapshot_metric",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "Test Error"
+            }
+        },
+        {
+            "key": "save_optiomal_snapshot",
+            "name": "save_optiomal_snapshot",
+            "required": false,
+            "description": "save_optiomal_snapshot",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": true
+            }
+        }
+    ],
+    "results": [
+        {
+            "key": "tool_output_group",
+            "name": "Tool Outputs",
+            "description": "Tool outputs",
+            "file_patterns": [
+                "**/*"
+            ]
+        }
+    ],
+    "resources": {
+        "cpu": 1,
+        "gpu": 0,
+        "memory": 1000
+    }
+}
