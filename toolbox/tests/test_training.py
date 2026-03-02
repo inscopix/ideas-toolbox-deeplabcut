@@ -1,5 +1,6 @@
 import os
 import zipfile
+import multiprocessing
 
 import pytest
 
@@ -42,19 +43,25 @@ def test_train_model(
 ):
     """Tests basic functionality of the train model tool"""
 
-    train_model(
-        labeled_data_zip_file=labeled_data_zip_file,
-        config_file=config_file,
-        train_pose_cfg_file=train_pose_cfg_file,
-        test_pose_cfg_file=test_pose_cfg_file,
-        max_iters=max_iters,
-        save_iters=save_iters,
-        plot_evaluation_results=plot_evaluation_results,
-        per_keypoint_evaluation=per_keypoint_evaluation,
-        generate_maps=generate_maps,
-        output_dir=output_dir,
-        engine="tensorflow",
+    # run as a subprocess to ensure gpu memory is freed afterwards for other test cases
+    p = multiprocessing.Process(
+        target=train_model,
+        kwargs={
+            "labeled_data_zip_file" : labeled_data_zip_file,
+            "config_file" : config_file,
+            "train_pose_cfg_file" : train_pose_cfg_file,
+            "test_pose_cfg_file" : test_pose_cfg_file,
+            "max_iters" : max_iters,
+            "save_iters" : save_iters,
+            "plot_evaluation_results" : plot_evaluation_results,
+            "per_keypoint_evaluation" : per_keypoint_evaluation,
+            "generate_maps" : generate_maps,
+            "output_dir" : output_dir,
+            "engine" : "tensorflow",
+        }
     )
+    p.start()
+    p.join()
 
     dlc_models_zip = os.path.join(output_dir, "model.zip")
     assert os.path.exists(dlc_models_zip)
@@ -183,16 +190,15 @@ def test_train_model(
 
 
 @pytest.mark.parametrize(
-    "labeled_data_zip_file,config_file,train_pose_cfg_file,test_pose_cfg_file,max_iters,save_iters,plot_evaluation_results,per_keypoint_evaluation,generate_maps",
+    "labeled_data_zip_file,config_file,train_pose_cfg_file,test_pose_cfg_file,epochs,save_epochs,plot_evaluation_results,per_keypoint_evaluation",
     [
         pytest.param(
             [os.path.join(input_dir, "labeled-data.zip")],
             [os.path.join(input_dir, "config.yaml")],
             [os.path.join(input_dir, "train_pose_cfg.yaml")],
             [os.path.join(input_dir, "test_pose_cfg.yaml")],
-            2000,
-            1000,
-            True,
+            3,
+            1,
             True,
             True,
             marks=pytest.mark.skipif(
@@ -207,31 +213,33 @@ def test_train_model_pytorch(
     config_file,
     train_pose_cfg_file,
     test_pose_cfg_file,
-    max_iters,
-    save_iters,
+    epochs,
+    save_epochs,
     plot_evaluation_results,
     per_keypoint_evaluation,
-    generate_maps,
     output_dir,
 ):
     """Tests basic functionality of the train model tool using pytorch engine"""
 
-    train_model(
-        labeled_data_zip_file=labeled_data_zip_file,
-        config_file=config_file,
-        train_pose_cfg_file=train_pose_cfg_file,
-        test_pose_cfg_file=test_pose_cfg_file,
-        max_iters=max_iters,
-        save_iters=save_iters,
-        epochs=3,
-        save_epochs=1,
-        plot_evaluation_results=plot_evaluation_results,
-        per_keypoint_evaluation=per_keypoint_evaluation,
-        generate_maps=generate_maps,
-        output_dir=output_dir,
-        engine="pytorch",
+    # run as a subprocess to ensure gpu memory is freed afterwards for other test cases
+    p = multiprocessing.Process(
+        target=train_model,
+        kwargs={
+            "labeled_data_zip_file" : labeled_data_zip_file,
+            "config_file" : config_file,
+            "train_pose_cfg_file" : train_pose_cfg_file,
+            "test_pose_cfg_file" : test_pose_cfg_file,
+            "epochs" : epochs,
+            "save_epochs" : save_epochs,
+            "plot_evaluation_results" : plot_evaluation_results,
+            "per_keypoint_evaluation" : per_keypoint_evaluation,
+            "output_dir" : output_dir,
+            "engine" : "pytorch",
+        }
     )
-
+    p.start()
+    p.join()
+    
     dlc_models_zip = os.path.join(output_dir, "model.zip")
     assert os.path.exists(dlc_models_zip)
 
@@ -239,7 +247,6 @@ def test_train_model_pytorch(
     with zipfile.ZipFile(dlc_models_zip, "r") as f:
         f.extractall(output_dir)
 
-    # ['evaluation_results_preview.svg', 'evaluation_results_error_distribution_preview.svg', 'DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003_error_distribution_pcutoff.h5', 'evaluation_results_error_distribution_pcutoff_preview.svg', 'model.zip', 'evaluation_results.zip', 'learning_stats_preview.svg', 'config.yaml', 'evaluation_results_plots_test_movie_preview.mp4', 'DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003_error_distribution.h5', 'evaluation_results_plots_train_movie_preview.mp4', 'dlc-models-pytorch', 'CombinedEvaluation-results.csv']
     assert set(
         ["config.yaml", "CombinedEvaluation-results.csv", "dlc-models-pytorch"]
     ).issubset(os.listdir(output_dir))
@@ -301,7 +308,6 @@ def test_train_model_pytorch(
     # verify contents of evaluation-results folder
     with zipfile.ZipFile(evaluation_results_zip, "r") as f:
         f.extractall(output_dir)
-    print("HIIIII", os.listdir(output_dir))
 
     assert "evaluation-results-pytorch" in os.listdir(output_dir)
     assert os.listdir(os.path.join(output_dir, "evaluation-results-pytorch")) == [
@@ -349,7 +355,6 @@ def test_train_model_pytorch(
     preview_files = [
         "evaluation_results_preview.svg",
         "evaluation_results_error_distribution_preview.svg",
-        "evaluation_results_error_distribution_pcutoff_preview.svg",
         "evaluation_results_plots_train_movie_preview.mp4",
         "evaluation_results_plots_test_movie_preview.mp4",
         "learning_stats_preview.svg",

@@ -1,5 +1,6 @@
 import os
 import json
+import multiprocessing
 
 import pytest
 import pandas as pd
@@ -57,22 +58,28 @@ def test_run_workflow(
     """Tests the workflow tool on a zipped model dir."""
     dataset_name, _ = os.path.splitext(os.path.basename(movie_files[0]))
 
-    run_workflow(
-        model_dir=model_dir,
-        movie_files=movie_files,
-        experiment_annotations_format=experiment_annotations_format,
-        crop_rect=crop_rect,
-        window_length=window_length,
-        displayed_body_parts=displayed_body_parts,
-        p_cutoff=p_cutoff,
-        dot_size=dot_size,
-        color_map=color_map,
-        keypoints_only=keypoints_only,
-        output_frame_rate=output_frame_rate,
-        draw_skeleton=draw_skeleton,
-        trail_points=trail_points,
-        output_dir=output_dir,
+    # run as a subprocess to ensure gpu memory is freed afterwards for other test cases
+    p = multiprocessing.Process(
+        target=run_workflow,
+        kwargs={
+            "model_dir" : model_dir,
+            "movie_files" : movie_files,
+            "experiment_annotations_format" : experiment_annotations_format,
+            "crop_rect" : crop_rect,
+            "window_length" : window_length,
+            "displayed_body_parts" : displayed_body_parts,
+            "p_cutoff" : p_cutoff,
+            "dot_size" : dot_size,
+            "color_map" : color_map,
+            "keypoints_only" : keypoints_only,
+            "output_frame_rate" : output_frame_rate,
+            "draw_skeleton" : draw_skeleton,
+            "trail_points" : trail_points,
+            "output_dir" : output_dir,
+        }
     )
+    p.start()
+    p.join()
 
     # verify h5 output
     h5_output_filename = f"{output_dir}/dlc_pose_estimates.0.h5"

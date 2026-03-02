@@ -65,6 +65,7 @@ test: build
 	docker run \
 		--platform ${PLATFORM} $(RUNTIME) \
 		-e USE_GPU=${USE_GPU} \
+		--name ideas-toolbox-deeplabcut-test \
 		--rm \
 		${IMAGE_TAG} \
 		python -m pytest ${TEST_ARGS}

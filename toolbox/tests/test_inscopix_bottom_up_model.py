@@ -1,5 +1,6 @@
 import os
 import json
+import multiprocessing
 import pytest
 
 import matplotlib
@@ -85,21 +86,28 @@ def test_inscopix_bottom_up_model_run(
 
     dataset_name, _ = os.path.splitext(movie_file)
     movie_files = [f"{input_dir}/{movie_file}"]
-    run(
-        movie_files=movie_files,
-        experiment_annotations_format=experiment_annotations_format,
-        crop_rect=crop_rect,
-        window_length=window_length,
-        displayed_body_parts=displayed_body_parts,
-        p_cutoff=p_cutoff,
-        dot_size=dot_size,
-        color_map=color_map,
-        keypoints_only=keypoints_only,
-        output_frame_rate=output_frame_rate,
-        draw_skeleton=draw_skeleton,
-        trail_points=trail_points,
-        output_dir=output_dir,
+
+    # run as a subprocess to ensure gpu memory is freed afterwards for other test cases
+    p = multiprocessing.Process(
+        target=run,
+        kwargs={
+            "movie_files" : movie_files,
+            "experiment_annotations_format" : experiment_annotations_format,
+            "crop_rect" : crop_rect,
+            "window_length" : window_length,
+            "displayed_body_parts" : displayed_body_parts,
+            "p_cutoff" : p_cutoff,
+            "dot_size" : dot_size,
+            "color_map" : color_map,
+            "keypoints_only" : keypoints_only,
+            "output_frame_rate" : output_frame_rate,
+            "draw_skeleton" : draw_skeleton,
+            "trail_points" : trail_points,
+            "output_dir" : output_dir,
+        }
     )
+    p.start()
+    p.join()
 
     # verify h5 output
     h5_output_filename = f"{output_dir}/dlc_pose_estimates.0.h5"
