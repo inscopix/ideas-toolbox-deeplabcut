@@ -64,11 +64,11 @@
             "key": "training_fraction",
             "name": "Training Fraction",
             "required": false,
-            "description": "The fraction of labeled data to use for training the network, the remainder is used for testing the network for validation. This value is automatically calculated if \u201cTrain Video Files\u201d and \u201cTest Video Files\u201d are specified.  If empty, and no \u201cTrain Video Files\u201d and \u201cTest Video Files\u201d are specified, then the value in the input config file is used.",
+            "description": "The fraction of labeled data to use for training the network, the remainder is used for testing the network for validation. This value is automatically calculated if “Train Video Files” and “Test Video Files” are specified.  If empty, and no “Train Video Files” and “Test Video Files” are specified, then the value in the input config file is used.",
             "type": {
                 "param_type": "ToolFloatRangeParam",
                 "min": 0,
-                "max": 1.0,
+                "max": 1,
                 "default": 0.95
             },
             "group": "Config"
@@ -81,7 +81,7 @@
             "type": {
                 "param_type": "ToolFloatRangeParam",
                 "min": 0,
-                "max": 1.0,
+                "max": 1,
                 "default": 0.6
             },
             "group": "Config"
@@ -90,7 +90,7 @@
             "key": "train_files",
             "name": "Train Files",
             "required": true,
-            "description": "Comma-separated list of video file names from labeled data to use for training the network. Must be specified if \u201cTest Video Files\u201d is passed. If empty, then train images are automatically selected from labeled data.",
+            "description": "Comma-separated list of video file names from labeled data to use for training the network. Must be specified if “Test Video Files” is passed. If empty, then train images are automatically selected from labeled data.",
             "type": {
                 "param_type": "ToolStringParam",
                 "default": "auto"
@@ -101,7 +101,7 @@
             "key": "test_files",
             "name": "Test Files",
             "required": true,
-            "description": "Comma-separated list of video file names from labeled data to use for testing the network. Must be specified if \u201cTrain Video Files\u201d is passed. If empty, then test images are automatically selected from labeled data.",
+            "description": "Comma-separated list of video file names from labeled data to use for testing the network. Must be specified if “Train Video Files” is passed. If empty, then test images are automatically selected from labeled data.",
             "type": {
                 "param_type": "ToolStringParam",
                 "default": "auto"
@@ -208,7 +208,7 @@
             "key": "num_snapshots_to_evaluate",
             "name": "Number of Snapshots To Evaluate",
             "required": true,
-            "description": "Sets how many snapshots are evaluated, i.e. states of the trained network. Every saving iteration a snapshot is stored, however only the last \u201cNumber of Snapshots to Evaluate\u201d are kept. If \"all\", then all snapshots are evaluated.",
+            "description": "Sets how many snapshots are evaluated, i.e. states of the trained network. Every saving iteration a snapshot is stored, however only the last “Number of Snapshots to Evaluate” are kept. If \"all\", then all snapshots are evaluated.",
             "type": {
                 "param_type": "ToolStringParam",
                 "default": "all"
@@ -367,7 +367,7 @@
                 "param_type": "ToolFloatRangeParam",
                 "default": 0.1,
                 "min": 0,
-                "max": 1.0
+                "max": 1
             },
             "group": "Train Network (pytorch)"
         },
@@ -400,7 +400,7 @@
             "key": "body_parts_to_evaluate",
             "name": "Body Parts To Evaluate",
             "required": true,
-            "description": "The average error for evaluation results will be computed for those body parts only. The provided list has to be a subset of the defined body parts. Otherwise, set to \u201call\u201d to compute error over all body parts.",
+            "description": "The average error for evaluation results will be computed for those body parts only. The provided list has to be a subset of the defined body parts. Otherwise, set to “all” to compute error over all body parts.",
             "type": {
                 "param_type": "ToolStringParam",
                 "default": "all"
@@ -467,7 +467,7 @@
             "key": "save_optiomal_snapshot",
             "name": "Save Optiomal Snapshot",
             "required": true,
-            "description": "Only keep the snapshot with the smallest error from the evaluation results in the zipped model output. The error to minimize is indicated by the \u201cOptimal Snapshot Error Metric\u201d parameter.  This significantly reduces the size of the zipped model output uploaded to IDEAS.  If set to false, then all snapshots evaluated are included in the zipped model output. This is controlled by the \u201cSnapshots to Evaluate\u201d parameter.",
+            "description": "Only keep the snapshot with the smallest error from the evaluation results in the zipped model output. The error to minimize is indicated by the “Optimal Snapshot Error Metric” parameter.  This significantly reduces the size of the zipped model output uploaded to IDEAS.  If set to false, then all snapshots evaluated are included in the zipped model output. This is controlled by the “Snapshots to Evaluate” parameter.",
             "type": {
                 "param_type": "ToolBooleanParam",
                 "default": true
