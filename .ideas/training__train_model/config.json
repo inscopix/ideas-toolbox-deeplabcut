@@ -1,0 +1,7 @@
+{
+    "container": "platform/deeplabcut:latest",
+    "executor_type": "PYTHON",
+    "file": "toolbox/tools/training.py",
+    "function": "train_model_ideas_wrapper",
+    "schema_version": "1.0.0"
+}

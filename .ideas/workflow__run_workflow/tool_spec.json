@@ -1,0 +1,229 @@
+{
+    "key": "workflow__run_workflow",
+    "name": "DeepLabCut Pose Estimation",
+    "schema_version": "3.0.0",
+    "container_image": {
+        "repository": "platform/deeplabcut",
+        "label": "0.0.1"
+    },
+    "command": {
+        "file_path": "toolbox/tools/workflow.py",
+        "entry_point": "run_workflow_ideas_wrapper",
+        "program_type": "PYTHON"
+    },
+    "params": [
+        {
+            "key": "model_dir",
+            "name": "Zipped Model Folder",
+            "required": true,
+            "description": "DeepLabCut model folder compressed in a .ZIP file. The contents of this file will be extracted and used for execution with DeepLabCut",
+            "type": {
+                "param_type": "ToolPathParam",
+                "file_formats": [
+                    "zip"
+                ]
+            },
+            "group": "Inputs"
+        },
+        {
+            "key": "movie_files",
+            "name": "Behavior Movie",
+            "required": true,
+            "description": "Behavioural movies to analyze. Must be one of the following formats: .isxb, .mp4, and .avi.",
+            "type": {
+                "param_type": "ToolPathParam",
+                "file_formats": [
+                    "isxb",
+                    "mp4",
+                    "avi"
+                ]
+            },
+            "group": "Inputs"
+        },
+        {
+            "key": "experiment_annotations_format",
+            "name": "Experiment Annotations Format",
+            "required": true,
+            "description": "The file format of the output experiment annotations file. Can be either .parquet or .csv",
+            "type": {
+                "param_type": "ToolChoiceParam",
+                "default": "parquet",
+                "choices": [
+                    "parquet",
+                    "csv"
+                ],
+                "display_options": [
+                    "parquet",
+                    "csv"
+                ]
+            },
+            "group": "Predict"
+        },
+        {
+            "key": "crop_rect",
+            "name": "Crop Rectangle",
+            "required": false,
+            "description": "Draw a cropping rectangle on the input movie which will be used by DeepLabCut to crop movie frames before running the model.",
+            "type": {
+                "param_type": "ToolRoiFrameParam",
+                "source_file": {
+                    "key": "movie_files",
+                    "data": {
+                        "type": "preview",
+                        "file_format": "mp4",
+                        "key": "no_tracking"
+                    }
+                },
+                "roi_settings": {
+                    "bounding_box": {
+                        "key": "crop_rect",
+                        "name": "Crop Rectangle"
+                    }
+                }
+            },
+            "group": "Predict"
+        },
+        {
+            "key": "window_length",
+            "name": "Window Length",
+            "required": true,
+            "description": "Length of the median filter applied on the predictions. Must be an odd number. If zero, then no filtering is applied.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 5,
+                "min": 0,
+                "max": 100
+            },
+            "group": "Filter"
+        },
+        {
+            "key": "displayed_body_parts",
+            "name": "Displayed Body Parts",
+            "required": true,
+            "description": "Selects the body parts that are plotted in the video. The body parts are specified in the config.yaml file of the zipped model folder.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "all"
+            },
+            "group": "Label"
+        },
+        {
+            "key": "p_cutoff",
+            "name": "P Cutoff",
+            "required": true,
+            "description": "Cutoff threshold for predictions when labelling the input movie. If predictions are below the threshold, then they are not displayed.",
+            "type": {
+                "param_type": "ToolFloatRangeParam",
+                "default": 0.6,
+                "min": 0,
+                "max": 1
+            },
+            "group": "Label"
+        },
+        {
+            "key": "dot_size",
+            "name": "Dot Size",
+            "required": true,
+            "description": "Size in pixels to draw a point labelling a body part.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 5,
+                "min": 1,
+                "max": 8
+            },
+            "group": "Label"
+        },
+        {
+            "key": "color_map",
+            "name": "Color Map",
+            "required": true,
+            "description": "Color map used to color body part labels. Any matplotlib colormap name is acceptable.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "rainbow"
+            },
+            "group": "Label"
+        },
+        {
+            "key": "keypoints_only",
+            "name": "Keypoints Only",
+            "required": true,
+            "description": "Only display keypoints, not video frames.",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            },
+            "group": "Label"
+        },
+        {
+            "key": "output_frame_rate",
+            "name": "Output Frame Rate",
+            "required": false,
+            "description": "Positive number, output frame rate for labeled video. If None, use the input movie frame rate.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "min": 1,
+                "max": 100
+            },
+            "group": "Label"
+        },
+        {
+            "key": "draw_skeleton",
+            "name": "Draw Skeleton",
+            "required": true,
+            "description": "If True adds a line connecting the body parts, making a skeleton on each frame. The body parts to be connected and the color of these connecting lines are specified by the Color Map.",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            },
+            "group": "Label"
+        },
+        {
+            "key": "trail_points",
+            "name": "Trail Points",
+            "required": true,
+            "description": "Number of previous frames whose body parts are plotted in a frame (for displaying history).",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 0,
+                "min": 0,
+                "max": 100
+            },
+            "group": "Label"
+        }
+    ],
+    "results": [
+        {
+            "key": "dlc_annotations",
+            "name": "DeepLabCut Annotations",
+            "description": "DeepLabCut pose estimates in IDEAS experiment annotations format",
+            "file_patterns": [
+                "dlc_annotations**"
+            ]
+        },
+        {
+            "key": "dlc_labeled_movie",
+            "name": "DeepLabCut Labeled Movie",
+            "description": "DeepLabCut pose estimates annotated on the input movie",
+            "file_patterns": [
+                "dlc_labeled_movie**"
+            ]
+        },
+        {
+            "key": "dlc_pose_estimates",
+            "name": "DeepLabCut Pose Estimates",
+            "description": "DeepLabCut pose estimates in an H5 file",
+            "file_patterns": [
+                "dlc_pose_estimates**"
+            ]
+        }
+    ],
+    "resources": {
+        "cpu": 3,
+        "gpu": 1,
+        "memory": 7600
+    },
+    "description": "Track animal body parts with a user-uploaded, pre-trained model",
+    "visibility": "public",
+    "version": "2.0.0"
+}

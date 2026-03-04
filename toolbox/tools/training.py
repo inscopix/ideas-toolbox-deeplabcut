@@ -18,6 +18,9 @@ from toolbox.utils.utilities import (
     get_timing_spacing_metadata_from_labeled_movie,
 )
 
+from ideas.tools import log
+from ideas.tools.types import IdeasFile
+
 import yaml
 
 # constants
@@ -65,7 +68,7 @@ error_types_dict = {
     },
 }
 
-logger = logging.getLogger()
+logger = log.get_logger()
 
 
 def _get_model_name(config: dict, trainingsetindex: int, shuffle: int):
@@ -1000,10 +1003,10 @@ def train_model(
     test_indices = None
     if train_files != "auto" and test_files != "auto":
         if isinstance(train_files, str):
-            train_files = [train_files]
+            train_files = train_files.split(",")
 
         if isinstance(test_files, str):
-            test_files = [test_files]
+            test_files = test_files.split(",")
 
         assert isinstance(
             train_files, list
@@ -1105,7 +1108,8 @@ def train_model(
         weight_init=None,
     )
 
-    if train_pose_cfg_file is not None:
+    # pytorch engine creates a pytorch_cfg.yaml file, not pose_cfg.yaml file
+    if train_pose_cfg_file is not None and engine != "pytorch":
         train_pose_cfg_file = train_pose_cfg_file[0]
         logger.info("Updating train pose cfg file from input file")
         update_pose_cfg_file(
@@ -1480,4 +1484,164 @@ def train_model(
         logger.warning(f"Failed to generate output metadata")
         logger.exception(error)
 
+    shutil.rmtree(project_path)
     logger.info("Finished DLC model training")
+
+
+# ================================ IDEAS Wrapper Functions ====================================
+
+def train_model_ideas_wrapper(
+    labeled_data_zip_file: List[IdeasFile],
+    config_file: List[IdeasFile],
+    engine: Optional[str] = None,
+    training_fraction: Optional[float] = None,
+    p_cutoff: Optional[float] = None,
+    train_files: str = "auto",
+    test_files: str = "auto",
+    net_type: str = "resnet_50",
+    augmenter_type: str = "default",
+    train_pose_cfg_file: Optional[List[IdeasFile]] = None,
+    pytorch_cfg_file: Optional[List[IdeasFile]] = None,
+    num_snapshots_to_evaluate: str = "all",
+    save_iters: int = 50000,
+    max_iters: int = 1030000,
+    allow_growth: bool = True,
+    keepdeconvweights: bool = True,
+    device: str = "auto",
+    batch_size: int = 4,
+    epochs: int = 200,
+    save_epochs: int = 50,
+    detector_batch_size: int = None,
+    detector_epochs: int = None,
+    detector_save_epochs: int = None,
+    pose_threshold: float = 0.1,
+    test_pose_cfg_file: Optional[List[IdeasFile]] = None,
+    plot_evaluation_results: bool = False,
+    body_parts_to_evaluate: str = "all",
+    rescale: bool = False,
+    per_keypoint_evaluation: bool = False,
+    generate_maps: bool = False,
+    optimal_snapshot_metric: str = "Test Error",
+    save_optiomal_snapshot: bool = True
+):
+    """Train a DLC model.
+
+    :param labeled_data_zip_file: A zip file containing the labeled data to use for training.
+    :param config_file: A config file describing the configuration of the DLC project.
+        Includes the body parts and skeleton of the animal pose,
+        Training fraction, network and augmenter types, etc.
+    :param engine: Specifies the backend engine to use for training the network.
+        Either "tensorflow" or "pytorch".
+        If empty, reads the engine value in the input config.yaml.
+        DeepLabCut recommends using pytorch since it is faster.
+        The tensorflow backend will be deprecated by the end of 2024.
+    :param training_fraction: The fraction of labeled data to use for training the network,
+        the remainder is used for testing the network for validation.
+        This value is automatically calculated if train_file and test_files are specified.
+        If empty, and no train_files and test_files are specified,
+        then the value in the input config file is used.
+    :param p_cutoff: Cutoff threshold for the confidence of model results.
+        If used, then results with a confidence below the cutoff are omitted from analysis.
+        This is used when generating evaluation results, and can be used downstream to filter
+        analyses on novel videos.
+    :param train_files: Comma-separated list of video file names from labeled data to use for training the network.
+        Must be specified if test_files is passed.
+        If empty, then train images are automatically selected from labeled data.
+    :param test_files: Comma-separated list of video file names from labeled data to use for training the network.
+        Must be specified if train_files is passed.
+        If empty, then test images are automatically selected from labeled data.
+    :param net_type: Type of network. Currently supported options are: resnet_50, resnet_101, resnet_152,
+        mobilenet_v2_1.0, mobilenet_v2_0.75, mobilenet_v2_0.5, mobilenet_v2_0.35,
+        efficientnet-b0, efficientnet-b, efficientnet-b2, efficientnet-b3, efficientnet-b4,
+        efficientnet-b5, efficientnet-b6
+    :param augemnter_type: Type of augmenter.
+        Currently supported options are: default, scalecrop, imgaug, tensorpack, deterministic
+    :param train_pose_cfg_file: A config file describing the configuration settings for training the network.
+    :param num_snapshots_to_evaluate: Sets how many snapshots are evaluated, i.e. states of the trained network.
+        Every save iteration period, a snapshot is stored, however only the last num_snapshots_to_evaluate are kept.
+        If empty, then all snapshots are evaluated.
+    :param save_iters: The interval to save an iteration as a snapshot.
+        If empty, then the value in pose_config.yaml is used.
+    :param max_iters: The maximum number of iterations to train the model.
+        If empty, then the value in pose_config.yaml is used.
+    :param allow_growth: For some smaller GPUs, memory issues happen.
+        If true then, the memory allocator does not pre-allocate the entire specified GPU memory region,
+        instead starting small and growing as needed.
+        See issue: https://forum.image.sc/t/how-to-stop-running-out-of-vram/30551/2
+    :param keepdeconvweights: Restores the weights of the deconvolution layers (and the backbone) when training from a snapshot.
+        Note that if you change the number of bodyparts, you need to set this to false for re-training.
+    :param device: (pytorch only) The torch device to train on (such as "cpu", "cuda", "mps", "auto"). By default set to "auto".
+    :param batch_size: (pytorch only) Overrides the batch size to train with in pytorch_config.yaml
+        Small batch sizes (i.e., value of one) is good for training on a CPU, but this tool runs on a GPU instance.
+        For GPUs a larger batch size should be used.
+        The value should be the biggest power of 2 where you don't geta CUDA out-of-memory error, such as 8, 16, 32 or 64.
+        By default a batch size of 4 is used as this has shown to stay within memory limits on the instance used for this tool.
+        This also allows you to increase the learning rate (empirically you can scale the learning rate by sqrt(batch_size) times).
+    :param epochs. (pytorch only) Overrides the maximum number of epochs to train the model for.
+    :param save_epochs: (pytorch only) Overrides the number of epochs between each snapshot save.
+    :param detector_batch_size: (pytorch only) Only for top-down models. Overrides the batch size with
+        which to train the detector.
+    :param detector_epochs: (pytorch only) Only for top-down models. Overrides the maximum number of
+        epochs to train the model for. Setting to 0 means the detector will not be trained.
+    :param detector_save_epochs: (pytorch only) Only for top-down models. Overrides the number of epochs
+            between each snapshot of the detector is saved.
+    :param pose_threshold: used for memory-replay. pseudo predictions that are below this are discarded for memory-replay
+    :param test_pose_cfg_file: A config file describing the configuration settings for testing (evaluating) the network.
+    :param plot_evaluation_results: Plots the predictions of evaluation results on the train and test images.
+    :param body_parts_to_evaluate: The average error for evaluation results will be computed for those body parts only.
+        The provided list has to be a subset of the defined body parts.
+        Otherwise, set to “all” to compute error over all body parts.
+    :param rescale: Evaluate the model at the 'global_scale' variable (as set in the pose_config.yaml file for a particular project).
+        I.e. every image will be resized according to that scale and prediction will be compared to the resized ground truth.
+        The error will be reported in pixels at rescaled to the original size.
+        I.e. For a [200,200] pixel image evaluated at global_scale=.5, the predictions are calculated on [100,100] pixel images,
+        compared to 1/2*ground truth and this error is then multiplied by 2.
+        The evaluation images are also shown for the original size.
+    :param per_keypoint_evaluation: Compute the train and test RMSE for each keypoint,
+        and save the results to a {model_name}-keypoint-results.csv in the evalution-results folder
+    :param generate_maps: Plot the scoremaps, locref layers, and PAFs from the evaluation results.
+    :param optimal_snapshot_metric: The type of error from the evaluation results to minimize in order to find the optimal snapshot.
+        Options are: Train Error, Test Error, Train Error w/ p-cutoff, Test Error w/ p-cutoff
+    :param save_optiomal_snapshot: Only keep the snapshot with the smallest error from the evaluation results in the zipped model output.
+        The error to minimize is indicated by the optimal_snapshot_metric parameter.
+        This significantly reduces the size of the zipped model output uploaded to IDEAS.
+        If set to false, then all snapshots evaluated are included in the zipped model output.
+        This is controlled by the num_snapshots_to_evaluate parameter.
+    :param output_dir: Output directory (set during testing only.)
+        If empty, use cwd.
+    """
+
+    train_model(
+        labeled_data_zip_file=labeled_data_zip_file,
+        config_file=config_file,
+        engine=engine,
+        training_fraction=training_fraction,
+        p_cutoff=p_cutoff,
+        train_files=train_files,
+        test_files=test_files,
+        net_type=net_type,
+        augmenter_type=augmenter_type,
+        train_pose_cfg_file=train_pose_cfg_file,
+        pytorch_cfg_file=pytorch_cfg_file,
+        num_snapshots_to_evaluate=num_snapshots_to_evaluate,
+        save_iters=save_iters,
+        max_iters=max_iters,
+        allow_growth=allow_growth,
+        keepdeconvweights=keepdeconvweights,
+        device=device,
+        batch_size=batch_size,
+        epochs=epochs,
+        save_epochs=save_epochs,
+        detector_batch_size=detector_batch_size,
+        detector_epochs=detector_epochs,
+        detector_save_epochs=detector_save_epochs,
+        pose_threshold=pose_threshold,
+        test_pose_cfg_file=test_pose_cfg_file,
+        plot_evaluation_results=plot_evaluation_results,
+        body_parts_to_evaluate=body_parts_to_evaluate,
+        rescale=rescale,
+        per_keypoint_evaluation=per_keypoint_evaluation,
+        generate_maps=generate_maps,
+        optimal_snapshot_metric=optimal_snapshot_metric,
+        save_optiomal_snapshot=save_optiomal_snapshot,
+    )

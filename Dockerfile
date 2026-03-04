@@ -158,3 +158,12 @@ CMD ["/bin/bash"]
 
 FROM base AS jupyter
 RUN ${PYTHON} -m pip install jupyter
+
+
+# Create image for testing which copies tool code and test data to
+# docker image in order to facilitate unit testing in an isolated environment.
+# This can also be acheived with volume mounts, but that can clutter up
+# your local folder with files generated during testing.
+FROM base AS test
+
+COPY --chown=ideas ./ /ideas

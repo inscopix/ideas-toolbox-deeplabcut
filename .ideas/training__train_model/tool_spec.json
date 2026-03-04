@@ -1,0 +1,504 @@
+{
+    "key": "training__train_model",
+    "name": "Train DeepLabCut Model",
+    "schema_version": "3.0.0",
+    "container_image": {
+        "repository": "platform/deeplabcut",
+        "label": "0.0.1"
+    },
+    "command": {
+        "file_path": "toolbox/tools/training.py",
+        "entry_point": "train_model_ideas_wrapper",
+        "program_type": "PYTHON"
+    },
+    "params": [
+        {
+            "key": "labeled_data_zip_file",
+            "name": "Labeled Data Zip File",
+            "required": true,
+            "description": "A zip file containing the labeled data to use for training.",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true,
+                "file_formats": [
+                    "zip",
+                    "tar.gz"
+                ]
+            },
+            "group": "Inputs"
+        },
+        {
+            "key": "config_file",
+            "name": "Config File",
+            "required": true,
+            "description": "A config file describing the configuration of the DLC project. Includes the body parts and skeleton of the animal pose, training fraction, network and augmenter types, etc.",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true,
+                "file_formats": [
+                    "yaml"
+                ]
+            },
+            "group": "Inputs"
+        },
+        {
+            "key": "engine",
+            "name": "Engine",
+            "required": false,
+            "description": "Specifies the backend engine to use for training the network. Either \"tensorflow\" or \"pytorch\". If empty, reads the engine value in the input config.yaml. DeepLabCut recommends using pytorch since it is faster. The tensorflow backend will be deprecated by the end of 2024.",
+            "type": {
+                "param_type": "ToolChoiceParam",
+                "choices": [
+                    "pytorch",
+                    "tensorflow"
+                ],
+                "display_options": [
+                    "pytorch",
+                    "tensorflow"
+                ],
+                "default": "pytorch"
+            },
+            "group": "Config"
+        },
+        {
+            "key": "training_fraction",
+            "name": "Training Fraction",
+            "required": false,
+            "description": "The fraction of labeled data to use for training the network, the remainder is used for testing the network for validation. This value is automatically calculated if “Train Video Files” and “Test Video Files” are specified.  If empty, and no “Train Video Files” and “Test Video Files” are specified, then the value in the input config file is used.",
+            "type": {
+                "param_type": "ToolFloatRangeParam",
+                "min": 0,
+                "max": 1,
+                "default": 0.95
+            },
+            "group": "Config"
+        },
+        {
+            "key": "p_cutoff",
+            "name": "P Cutoff",
+            "required": false,
+            "description": "Cutoff threshold for the confidence of model results. If used, then results with a confidence below the cutoff are omitted from analysis. This is used when generating evaluation results, and can be used downstream to filter analyses on novel videos.",
+            "type": {
+                "param_type": "ToolFloatRangeParam",
+                "min": 0,
+                "max": 1,
+                "default": 0.6
+            },
+            "group": "Config"
+        },
+        {
+            "key": "train_files",
+            "name": "Train Files",
+            "required": true,
+            "description": "Comma-separated list of video file names from labeled data to use for training the network. Must be specified if “Test Video Files” is passed. If empty, then train images are automatically selected from labeled data.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "auto"
+            },
+            "group": "Create Training Dataset"
+        },
+        {
+            "key": "test_files",
+            "name": "Test Files",
+            "required": true,
+            "description": "Comma-separated list of video file names from labeled data to use for testing the network. Must be specified if “Train Video Files” is passed. If empty, then test images are automatically selected from labeled data.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "auto"
+            },
+            "group": "Create Training Dataset"
+        },
+        {
+            "key": "net_type",
+            "name": "Net Type",
+            "required": true,
+            "description": "Type of network. Currently supported options are: resnet_50, resnet_101, resnet_152, mobilenet_v2_1.0, mobilenet_v2_0.75, mobilenet_v2_0.5, mobilenet_v2_0.35, efficientnet-b0, efficientnet-b, efficientnet-b2, efficientnet-b3, efficientnet-b4, efficientnet-b5, efficientnet-b6",
+            "type": {
+                "param_type": "ToolChoiceParam",
+                "default": "resnet_50",
+                "choices": [
+                    "resnet_50",
+                    "resnet_101",
+                    "resnet_152",
+                    "mobilenet_v2_1.0",
+                    "mobilenet_v2_0.75",
+                    "mobilenet_v2_0.5",
+                    "mobilenet_v2_0.35",
+                    "efficientnet-b0",
+                    "efficientnet-b",
+                    "efficientnet-b2",
+                    "efficientnet-b3",
+                    "efficientnet-b4",
+                    "efficientnet-b5",
+                    "efficientnet-b6"
+                ],
+                "display_options": [
+                    "resnet_50",
+                    "resnet_101",
+                    "resnet_152",
+                    "mobilenet_v2_1.0",
+                    "mobilenet_v2_0.75",
+                    "mobilenet_v2_0.5",
+                    "mobilenet_v2_0.35",
+                    "efficientnet-b0",
+                    "efficientnet-b",
+                    "efficientnet-b2",
+                    "efficientnet-b3",
+                    "efficientnet-b4",
+                    "efficientnet-b5",
+                    "efficientnet-b6"
+                ]
+            },
+            "group": "Create Training Dataset"
+        },
+        {
+            "key": "augmenter_type",
+            "name": "Augmenter Type",
+            "required": true,
+            "description": "Type of augmenter. Currently supported options are: default, scalecrop, imgaug, tensorpack, deterministic",
+            "type": {
+                "param_type": "ToolChoiceParam",
+                "default": "default",
+                "choices": [
+                    "default",
+                    "scalecrop",
+                    "imgaug",
+                    "tensorpack",
+                    "deterministic"
+                ],
+                "display_options": [
+                    "default",
+                    "scalecrop",
+                    "imgaug",
+                    "tensorpack",
+                    "deterministic"
+                ]
+            },
+            "group": "Create Training Dataset"
+        },
+        {
+            "key": "train_pose_cfg_file",
+            "name": "Train Pose Config File",
+            "required": false,
+            "description": "A config file describing the configuration settings for training the network.",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true,
+                "file_formats": [
+                    "yaml"
+                ]
+            },
+            "group": "Train Network"
+        },
+        {
+            "key": "pytorch_cfg_file",
+            "name": "Pytorch Config File",
+            "required": false,
+            "description": "A config file describing the pytorch configuration settings for training the network.",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true,
+                "file_formats": [
+                    "yaml"
+                ]
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "num_snapshots_to_evaluate",
+            "name": "Number of Snapshots To Evaluate",
+            "required": true,
+            "description": "Sets how many snapshots are evaluated, i.e. states of the trained network. Every saving iteration a snapshot is stored, however only the last “Number of Snapshots to Evaluate” are kept. If \"all\", then all snapshots are evaluated.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "all"
+            },
+            "group": "Train Network"
+        },
+        {
+            "key": "save_iters",
+            "name": "Save Iterations",
+            "required": true,
+            "description": "The interval to save an iteration as a snapshot. If empty, then the value in pose_config.yaml is used.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 50000,
+                "min": 1
+            },
+            "group": "Train Network"
+        },
+        {
+            "key": "max_iters",
+            "name": "Max Iterations",
+            "required": true,
+            "description": "The maximum number of iterations to train the model. If empty, then the value in pose_config.yaml is used.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 250000,
+                "min": 1
+            },
+            "group": "Train Network"
+        },
+        {
+            "key": "allow_growth",
+            "name": "Allow Growth",
+            "required": true,
+            "description": "For some smaller GPUs, memory issues happen. If true then, the memory allocator does not pre-allocate the entire specified GPU memory region, instead starting small and growing as needed. See issue: https://forum.image.sc/t/how-to-stop-running-out-of-vram/30551/2",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": true
+            },
+            "group": "Train Network"
+        },
+        {
+            "key": "keepdeconvweights",
+            "name": "Keep Deconvolution Weights",
+            "required": true,
+            "description": "Restores the weights of the deconvolution layers (and the backbone) when training from a snapshot. Note that if you change the number of bodyparts, you need to set this to false for re-training.",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": true
+            },
+            "group": "Train Network"
+        },
+        {
+            "key": "device",
+            "name": "Device",
+            "required": false,
+            "description": "(pytorch only) The torch device to train on (such as \"cpu\", \"cuda\", \"mps\", \"auto\"). Overrides the value set in pytorch_config.yaml.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "auto"
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "batch_size",
+            "name": "Batch Size",
+            "required": false,
+            "description": "(pytorch only) The batch size to train with. Overrides the value set in pytorch_config.yaml. Small batch sizes (i.e., value of one) is good for training on a CPU, but this tool runs on a GPU instance. For GPUs a larger batch size should be used. The value should be the biggest power of 2 where you don't geta CUDA out-of-memory error, such as 8, 16, 32 or 64. This also allows you to increase the learning rate (empirically you can scale the learning rate by sqrt(batch_size) times). By default a batch size of 2 is used as this has shown to stay within memory limits on the instance used for this tool.",
+            "type": {
+                "param_type": "ToolChoiceParam",
+                "default": "2",
+                "choices": [
+                    "1",
+                    "2",
+                    "4",
+                    "8",
+                    "16",
+                    "32",
+                    "64"
+                ],
+                "display_options": [
+                    "1",
+                    "2",
+                    "4",
+                    "8",
+                    "16",
+                    "32",
+                    "64"
+                ]
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "epochs",
+            "name": "Epochs",
+            "required": false,
+            "description": "(pytorch only) The maximum number of epochs to train the model. Overrides the value set in pytorch_config.yaml.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 200,
+                "min": 1
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "save_epochs",
+            "name": "Save Epochs",
+            "required": false,
+            "description": "(pytorch only) The number of epochs between each snapshot save. Overrides the value set in pytorch_config.yaml.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "default": 50,
+                "min": 1
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "detector_batch_size",
+            "name": "Detector Batch Size",
+            "required": false,
+            "description": "(pytorch only) Only for top-down models. The batch size with which to train the detector. Overrides the value set in pytorch_config.yaml.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "min": 1
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "detector_epochs",
+            "name": "Detector Epochs",
+            "required": false,
+            "description": "(pytorch only) Only for top-down models. The maximum number of epochs to train the model. Overrides the value set in pytorch_config.yaml. Setting to 0 means the detector will not be trained.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "min": 1
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "detector_save_epochs",
+            "name": "Detector Save Epochs",
+            "required": false,
+            "description": "(pytorch only) Only for top-down models. The number of epochs between each snapshot of the detector is saved. Overrides the value set in pytorch_config.yaml.",
+            "type": {
+                "param_type": "ToolIntRangeParam",
+                "min": 1
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "pose_threshold",
+            "name": "Pose Threshold",
+            "required": false,
+            "description": "(pytorch only) Used for memory-replay. pseudo predictions that are below this are discarded for memory-replay.",
+            "type": {
+                "param_type": "ToolFloatRangeParam",
+                "default": 0.1,
+                "min": 0,
+                "max": 1
+            },
+            "group": "Train Network (pytorch)"
+        },
+        {
+            "key": "test_pose_cfg_file",
+            "name": "Test Pose Config File",
+            "required": false,
+            "description": "A config file describing the configuration settings for testing (evaluating) the network.",
+            "type": {
+                "param_type": "ToolPathParam",
+                "multiple": true,
+                "file_formats": [
+                    "yaml"
+                ]
+            },
+            "group": "Evaluate Network"
+        },
+        {
+            "key": "plot_evaluation_results",
+            "name": "Plot Evaluation Results",
+            "required": true,
+            "description": "Plots the predictions of evaluation results on the train and test images. ",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            },
+            "group": "Evaluate Network"
+        },
+        {
+            "key": "body_parts_to_evaluate",
+            "name": "Body Parts To Evaluate",
+            "required": true,
+            "description": "The average error for evaluation results will be computed for those body parts only. The provided list has to be a subset of the defined body parts. Otherwise, set to “all” to compute error over all body parts.",
+            "type": {
+                "param_type": "ToolStringParam",
+                "default": "all"
+            },
+            "group": "Evaluate Network"
+        },
+        {
+            "key": "rescale",
+            "name": "Rescale",
+            "required": true,
+            "description": "Evaluate the model at the 'global_scale' variable (as set in the pose_config.yaml file for a particular project). I.e. every image will be resized according to that scale and prediction will be compared to the resized ground truth. The error will be reported in pixels at rescaled to the original size. I.e. For a [200,200] pixel image evaluated at global_scale=.5, the predictions are calculated on [100,100] pixel images, compared to 1/2*ground truth and this error is then multiplied by 2. The evaluation images are also shown for the original size.",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            },
+            "group": "Evaluate Network"
+        },
+        {
+            "key": "per_keypoint_evaluation",
+            "name": "Per Keypoint Evaluation",
+            "required": true,
+            "description": "Compute the train and test RMSE for each keypoint, and save the results to a {model_name}-keypoint-results.csv in the evalution-results folder",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            },
+            "group": "Evaluate Network"
+        },
+        {
+            "key": "generate_maps",
+            "name": "Generate Maps",
+            "required": true,
+            "description": "Plot the scoremaps, locref layers, and PAFs from the evaluation results.",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": false
+            },
+            "group": "Evaluate Network"
+        },
+        {
+            "key": "optimal_snapshot_metric",
+            "name": "Optimal Snapshot Metric",
+            "required": true,
+            "description": "The type of error from the evaluation results to minimize in order to find the optimal snapshot. Options are: Train Error, Test Error, Train Error w/ p-cutoff, Test Error w/ p-cutoff",
+            "type": {
+                "param_type": "ToolChoiceParam",
+                "default": "Test Error",
+                "choices": [
+                    "Train Error",
+                    "Test Error",
+                    "Train Error w/ p-cutoff",
+                    "Test Error w/ p-cutoff"
+                ],
+                "display_options": [
+                    "Train Error",
+                    "Test Error",
+                    "Train Error w/ p-cutoff",
+                    "Test Error w/ p-cutoff"
+                ]
+            },
+            "group": "Compress Outputs"
+        },
+        {
+            "key": "save_optiomal_snapshot",
+            "name": "Save Optiomal Snapshot",
+            "required": true,
+            "description": "Only keep the snapshot with the smallest error from the evaluation results in the zipped model output. The error to minimize is indicated by the “Optimal Snapshot Error Metric” parameter.  This significantly reduces the size of the zipped model output uploaded to IDEAS.  If set to false, then all snapshots evaluated are included in the zipped model output. This is controlled by the “Snapshots to Evaluate” parameter.",
+            "type": {
+                "param_type": "ToolBooleanParam",
+                "default": true
+            },
+            "group": "Compress Outputs"
+        }
+    ],
+    "results": [
+        {
+            "key": "model",
+            "name": "Model",
+            "description": "A zip file of the dlc-models folder from the DLC project which contains the model trained by DLC. The zip file will also contain some summary evaluation_results from the DLC project.",
+            "file_patterns": [
+                "model**"
+            ]
+        },
+        {
+            "key": "evaluation_results",
+            "name": "Evaluation Results",
+            "description": "A zip file containing evaluation results of the trained model including plots of model predictions on labeled data, scoremaps, and locref maps.",
+            "file_patterns": [
+                "evaluation_results**"
+            ]
+        }
+    ],
+    "resources": {
+        "cpu": 3,
+        "gpu": 1,
+        "memory": 7600
+    },
+    "description": "Train a deep learning model for pose estimation using DeepLabCut",
+    "visibility": "public",
+    "version": "2.0.0"
+}

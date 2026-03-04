@@ -1,0 +1,7 @@
+{
+    "container": "platform/deeplabcut:latest",
+    "executor_type": "PYTHON",
+    "file": "toolbox/tools/workflow.py",
+    "function": "run_workflow_ideas_wrapper",
+    "schema_version": "1.0.0"
+}

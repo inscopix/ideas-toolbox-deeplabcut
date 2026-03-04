@@ -1,5 +1,6 @@
 import os
 import zipfile
+import multiprocessing
 
 import pytest
 
@@ -16,7 +17,7 @@ input_dir = "/ideas/data/training"
             [os.path.join(input_dir, "config.yaml")],
             [os.path.join(input_dir, "train_pose_cfg.yaml")],
             [os.path.join(input_dir, "test_pose_cfg.yaml")],
-            2000,
+            1000,
             1000,
             True,
             True,
@@ -42,19 +43,25 @@ def test_train_model(
 ):
     """Tests basic functionality of the train model tool"""
 
-    train_model(
-        labeled_data_zip_file=labeled_data_zip_file,
-        config_file=config_file,
-        train_pose_cfg_file=train_pose_cfg_file,
-        test_pose_cfg_file=test_pose_cfg_file,
-        max_iters=max_iters,
-        save_iters=save_iters,
-        plot_evaluation_results=plot_evaluation_results,
-        per_keypoint_evaluation=per_keypoint_evaluation,
-        generate_maps=generate_maps,
-        output_dir=output_dir,
-        engine="tensorflow",
+    # run as a subprocess to ensure gpu memory is freed afterwards for other test cases
+    p = multiprocessing.Process(
+        target=train_model,
+        kwargs={
+            "labeled_data_zip_file" : labeled_data_zip_file,
+            "config_file" : config_file,
+            "train_pose_cfg_file" : train_pose_cfg_file,
+            "test_pose_cfg_file" : test_pose_cfg_file,
+            "max_iters" : max_iters,
+            "save_iters" : save_iters,
+            "plot_evaluation_results" : plot_evaluation_results,
+            "per_keypoint_evaluation" : per_keypoint_evaluation,
+            "generate_maps" : generate_maps,
+            "output_dir" : output_dir,
+            "engine" : "tensorflow",
+        }
     )
+    p.start()
+    p.join()
 
     dlc_models_zip = os.path.join(output_dir, "model.zip")
     assert os.path.exists(dlc_models_zip)
@@ -106,11 +113,11 @@ def test_train_model(
             "log",
             "log.txt",
             "pose_cfg.yaml",
-            "snapshot-2000.data-00000-of-00001",
-            "snapshot-2000.index",
-            "snapshot-2000.meta",
+            "snapshot-1000.data-00000-of-00001",
+            "snapshot-1000.index",
+            "snapshot-1000.meta",
         ]
-    )
+    ) 
     assert os.listdir(
         os.path.join(
             output_dir,
@@ -140,8 +147,8 @@ def test_train_model(
         [
             "bottom-view-mouseJul16-trainset95shuffle1",
             "CombinedEvaluation-results.csv",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_error_distribution.h5",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_error_distribution_pcutoff.h5",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_error_distribution.h5",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_error_distribution_pcutoff.h5",
         ]
     )
     assert set(
@@ -155,11 +162,8 @@ def test_train_model(
         )
     ) == set(
         [
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-keypoint-results.csv",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-results.csv",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-snapshot-2000.h5",
-            "LabeledImages_DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_snapshot-2000",
             "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-keypoint-results.csv",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-results.csv",
             "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-snapshot-1000.h5",
             "LabeledImages_DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_snapshot-1000",
             "maps",
@@ -175,6 +179,181 @@ def test_train_model(
         "evaluation_results_plots_test_movie_preview.mp4",
         "evaluation_results_maps_locref_movie_preview.mp4",
         "evaluation_results_maps_scmap_movie_preview.mp4",
+        "learning_stats_preview.svg",
+    ]
+
+    for f in preview_files:
+        assert os.path.exists(os.path.join(output_dir, f))
+
+
+@pytest.mark.parametrize(
+    "labeled_data_zip_file,config_file,train_pose_cfg_file,test_pose_cfg_file,epochs,save_epochs,plot_evaluation_results,per_keypoint_evaluation",
+    [
+        pytest.param(
+            [os.path.join(input_dir, "labeled-data.zip")],
+            [os.path.join(input_dir, "config.yaml")],
+            [os.path.join(input_dir, "train_pose_cfg.yaml")],
+            [os.path.join(input_dir, "test_pose_cfg.yaml")],
+            3,
+            1,
+            True,
+            True,
+            marks=pytest.mark.skipif(
+                not int(os.getenv("USE_GPU", default=0)),
+                reason="Test is only for GPUs",
+            ),
+        )
+    ],
+)
+def test_train_model_pytorch(
+    labeled_data_zip_file,
+    config_file,
+    train_pose_cfg_file,
+    test_pose_cfg_file,
+    epochs,
+    save_epochs,
+    plot_evaluation_results,
+    per_keypoint_evaluation,
+    output_dir,
+):
+    """Tests basic functionality of the train model tool using pytorch engine"""
+
+    # run as a subprocess to ensure gpu memory is freed afterwards for other test cases
+    p = multiprocessing.Process(
+        target=train_model,
+        kwargs={
+            "labeled_data_zip_file" : labeled_data_zip_file,
+            "config_file" : config_file,
+            "train_pose_cfg_file" : train_pose_cfg_file,
+            "test_pose_cfg_file" : test_pose_cfg_file,
+            "epochs" : epochs,
+            "save_epochs" : save_epochs,
+            "plot_evaluation_results" : plot_evaluation_results,
+            "per_keypoint_evaluation" : per_keypoint_evaluation,
+            "output_dir" : output_dir,
+            "engine" : "pytorch",
+        }
+    )
+    p.start()
+    p.join()
+    
+    dlc_models_zip = os.path.join(output_dir, "model.zip")
+    assert os.path.exists(dlc_models_zip)
+
+    # verify contents of dlc-models folder
+    with zipfile.ZipFile(dlc_models_zip, "r") as f:
+        f.extractall(output_dir)
+
+    assert set(
+        ["config.yaml", "CombinedEvaluation-results.csv", "dlc-models-pytorch"]
+    ).issubset(os.listdir(output_dir))
+    assert any(
+        [f.endswith("_error_distribution.h5") for f in os.listdir(output_dir)]
+    )
+    assert any(
+        [
+            f.endswith("_error_distribution_pcutoff.h5")
+            for f in os.listdir(output_dir)
+        ]
+    )
+    assert "iteration-0" in os.listdir(os.path.join(output_dir, "dlc-models-pytorch"))
+    assert os.listdir(
+        os.path.join(output_dir, "dlc-models-pytorch", "iteration-0")
+    ) == ["bottom-view-mouseJul16-trainset95shuffle1"]
+    assert set(
+        os.listdir(
+            os.path.join(
+                output_dir,
+                "dlc-models-pytorch",
+                "iteration-0",
+                "bottom-view-mouseJul16-trainset95shuffle1",
+            )
+        )
+    ) == set(["test", "train"])
+
+    assert set(
+        os.listdir(
+            os.path.join(
+                output_dir,
+                "dlc-models-pytorch",
+                "iteration-0",
+                "bottom-view-mouseJul16-trainset95shuffle1",
+                "train",
+            )
+        )
+    ) == set(
+        [
+            "learning_stats.csv",
+            "pytorch_config.yaml",
+            "snapshot-003.pt",
+            "train.txt"
+        ]
+    )
+    assert os.listdir(
+        os.path.join(
+            output_dir,
+            "dlc-models-pytorch",
+            "iteration-0",
+            "bottom-view-mouseJul16-trainset95shuffle1",
+            "test",
+        )
+    ) == ["pose_cfg.yaml"]
+
+    evaluation_results_zip = os.path.join(output_dir, "evaluation_results.zip")
+    assert os.path.exists(evaluation_results_zip)
+
+    # verify contents of evaluation-results folder
+    with zipfile.ZipFile(evaluation_results_zip, "r") as f:
+        f.extractall(output_dir)
+
+    assert "evaluation-results-pytorch" in os.listdir(output_dir)
+    assert os.listdir(os.path.join(output_dir, "evaluation-results-pytorch")) == [
+        "iteration-0"
+    ]
+    assert set(
+        os.listdir(
+            os.path.join(output_dir, "evaluation-results-pytorch", "iteration-0")
+        )
+    ) == set(
+        [
+            "bottom-view-mouseJul16-trainset95shuffle1",
+            "CombinedEvaluation-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003_error_distribution.h5",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003_error_distribution_pcutoff.h5",
+        ]
+    )
+    assert set(
+        os.listdir(
+            os.path.join(
+                output_dir,
+                "evaluation-results-pytorch",
+                "iteration-0",
+                "bottom-view-mouseJul16-trainset95shuffle1",
+            )
+        )
+    ) == set(
+        [
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003-keypoint-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003.h5",
+            "LabeledImages_DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_003",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_002-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_002-keypoint-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_002.h5",
+            "LabeledImages_DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_002",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_001-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_001-keypoint-results.csv",
+            "DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_001.h5",
+            "LabeledImages_DLC_Resnet50_bottom-view-mouseJul16shuffle1_snapshot_001",
+        ]
+    )
+
+    # verify previews
+    preview_files = [
+        "evaluation_results_preview.svg",
+        "evaluation_results_error_distribution_preview.svg",
+        "evaluation_results_plots_train_movie_preview.mp4",
+        "evaluation_results_plots_test_movie_preview.mp4",
         "learning_stats_preview.svg",
     ]
 
