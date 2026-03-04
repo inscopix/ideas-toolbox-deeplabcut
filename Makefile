@@ -70,13 +70,23 @@ test: build
 		${IMAGE_TAG} \
 		python -m pytest ${TEST_ARGS}
 
+check-ideas:
+	@command -v ideas >/dev/null 2>&1 || \
+	{ \
+		echo "Error: ideas command not found."; \
+		echo "Ensure you have installed ideas-python from pypi in an appropriate python environment before running this command."; \
+		exit 1; \
+	}
+
 # Run a tool in the repo
 # Specify the tool key to run
-run: build
+run: check-ideas build
 	ideas tools run $(tool) -s -c -n -g all
 
+SEP="============================================================="
+
 # Run all tools in the repo consecutively
-run-all: build
+run-all: check-ideas build
 	@$(foreach f,$(shell ls -d .ideas/*/), \
 		echo $(SEP); \
 		echo "Running $$(basename $(f))"; \

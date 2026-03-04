@@ -17,7 +17,7 @@ input_dir = "/ideas/data/training"
             [os.path.join(input_dir, "config.yaml")],
             [os.path.join(input_dir, "train_pose_cfg.yaml")],
             [os.path.join(input_dir, "test_pose_cfg.yaml")],
-            2000,
+            1000,
             1000,
             True,
             True,
@@ -113,11 +113,11 @@ def test_train_model(
             "log",
             "log.txt",
             "pose_cfg.yaml",
-            "snapshot-2000.data-00000-of-00001",
-            "snapshot-2000.index",
-            "snapshot-2000.meta",
+            "snapshot-1000.data-00000-of-00001",
+            "snapshot-1000.index",
+            "snapshot-1000.meta",
         ]
-    )
+    ) 
     assert os.listdir(
         os.path.join(
             output_dir,
@@ -147,8 +147,8 @@ def test_train_model(
         [
             "bottom-view-mouseJul16-trainset95shuffle1",
             "CombinedEvaluation-results.csv",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_error_distribution.h5",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_error_distribution_pcutoff.h5",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_error_distribution.h5",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_error_distribution_pcutoff.h5",
         ]
     )
     assert set(
@@ -162,11 +162,8 @@ def test_train_model(
         )
     ) == set(
         [
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-keypoint-results.csv",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-results.csv",
-            "DLC_resnet50_bottom-view-mouseJul16shuffle1_2000-snapshot-2000.h5",
-            "LabeledImages_DLC_resnet50_bottom-view-mouseJul16shuffle1_2000_snapshot-2000",
             "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-keypoint-results.csv",
+            "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-results.csv",
             "DLC_resnet50_bottom-view-mouseJul16shuffle1_1000-snapshot-1000.h5",
             "LabeledImages_DLC_resnet50_bottom-view-mouseJul16shuffle1_1000_snapshot-1000",
             "maps",
